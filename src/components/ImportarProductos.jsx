@@ -64,9 +64,10 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
       const ventaRaw = parseNum(get("venta"))
       const venta  = ventaRaw > 0 ? ventaRaw : costo > 0 ? Math.round(costo * (1 + (margen || 50) / 100)) : 0
       const catRaw = String(get("cat")).trim()
-      // buscar cat en lista o usar como está si no está vacía
-      const catMatch = cats.find(c => catRaw.toLowerCase().includes(c.toLowerCase().slice(0,4)))
-      const cat = catMatch || (catRaw && catRaw !== '0' ? catRaw : cats[0])
+      // Buscar coincidencia exacta o similar con categorías ya existentes
+      const catMatch = cats.find(c => c.trim().toLowerCase() === catRaw.toLowerCase() || (catRaw.length >= 4 && c.toLowerCase().includes(catRaw.toLowerCase().slice(0, 4))))
+      // Si coincide con una ya creada por otro proveedor, usar esa; si no, conservar la nueva para auto-crearla
+      const cat = catMatch || (catRaw && catRaw !== '0' ? catRaw : (cats[0] || 'General'))
       const foto = String(get("foto") || '').trim()
 
       return {
@@ -265,7 +266,24 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
   const confirmar = () => {
     const validos = preview.filter(p => p.nombre.trim())
     if (!validos.length) return
-    onImport(validos, listaName||"Lista importada")
+
+    // Auto-registrar categorías nuevas que no existan en FerrePro
+    if (setCategoriasExtra) {
+      const nuevasCats = []
+      validos.forEach(p => {
+        const catNombre = String(p.cat || '').trim()
+        if (catNombre && !allCats.some(c => c.toLowerCase() === catNombre.toLowerCase())) {
+          if (!nuevasCats.some(c => c.toLowerCase() === catNombre.toLowerCase())) {
+            nuevasCats.push(catNombre)
+          }
+        }
+      })
+      if (nuevasCats.length > 0) {
+        setCategoriasExtra(prev => [...(prev || []), ...nuevasCats])
+      }
+    }
+
+    onImport(validos, listaName || "Lista importada")
     onClose()
   }
 

@@ -184,22 +184,71 @@ export default function Inventario({ productos, setProductos, proveedores, categ
 
   const handleImport = (nuevos, listaName) => {
     const ahora = today()
-    setProductos(prev=>{
-      let next=[...prev]; const maxId=Math.max(0,...next.map(x=>x.id))
-      nuevos.forEach((p,i)=>{
-        const dup=next.find(x=>x.sku&&x.sku===p.sku)
-        if(dup){
-          if(p.costo && p.costo!==dup.costo && setHistorialPrecios){
-            setHistorialPrecios(ph=>[...ph,{id:nextId(ph),provId:p.provId||dup.provId,prodId:dup.id,
-              fecha:ahora,precio:p.costo,lista:listaName||"Lista importada"}])
+    let actualizados = 0
+    let creados = 0
+
+    setProductos(prev => {
+      let next = [...prev]
+      let maxId = Math.max(0, ...next.map(x => x.id || 0))
+
+      nuevos.forEach((p, i) => {
+        const pSku = String(p.sku || '').trim().toLowerCase()
+        const pNom = String(p.nombre || '').trim().toLowerCase()
+
+        // Buscar duplicado por SKU o por Nombre exacto
+        const dupIndex = next.findIndex(x => {
+          const xSku = String(x.sku || '').trim().toLowerCase()
+          const xNom = String(x.nombre || '').trim().toLowerCase()
+          return (pSku && xSku && pSku === xSku) || (pNom && xNom && pNom === xNom)
+        })
+
+        if (dupIndex !== -1) {
+          const dup = next[dupIndex]
+          actualizados++
+
+          // Registrar en historial si el costo cambió
+          if (p.costo && p.costo !== dup.costo && setHistorialPrecios) {
+            setHistorialPrecios(ph => [...ph, {
+              id: nextId(ph),
+              provId: p.provId || dup.provId,
+              prodId: dup.id,
+              fecha: ahora,
+              precio: p.costo,
+              lista: listaName || "Lista importada"
+            }])
           }
-          next=next.map(x=>x.sku===p.sku?{...x,costo:p.costo||x.costo,venta:p.venta||x.venta}:x)
+
+          // Actualizar precios y detalles del producto CONSERVANDO el stock físico actual
+          next[dupIndex] = {
+            ...dup,
+            costo: p.costo > 0 ? p.costo : dup.costo,
+            venta: p.venta > 0 ? p.venta : dup.venta,
+            cat: p.cat || dup.cat,
+            foto: p.foto || dup.foto || dup.imagen || '',
+            imagen: p.foto || dup.imagen || dup.foto || '',
+            provId: p.provId || dup.provId,
+            moneda: p.moneda || dup.moneda,
+            enlace: p.enlace || dup.enlace,
+            fechaUpdate: ahora
+          }
         } else {
-          next.push({...p,id:maxId+i+1})
+          creados++
+          maxId++
+          next.push({
+            ...p,
+            id: maxId,
+            stock: parseInt(p.stock) || 0,
+            fechaCreacion: ahora
+          })
         }
       })
+
       return next
     })
+
+    setTimeout(() => {
+      alert(`✅ Importación completada:\n\n• 🔄 ${actualizados} precios de productos existentes actualizados (conservando su stock actual).\n• 📦 ${creados} productos nuevos agregados al catálogo.`)
+    }, 200)
   }
 
   // ── Multi-selección ───────────────────────────────────────────────────────

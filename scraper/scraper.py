@@ -700,6 +700,136 @@ def scrapear_sitio_completo(url_base, max_categorias=None, scrolls_por_cat=10, p
 
     return todos_los_productos
 
+CONFIG_FILE = Path(__file__).resolve().parent / "proveedores_config.json"
+
+def cargar_proveedores_config():
+    if not CONFIG_FILE.exists():
+        return {"proveedores": []}
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"proveedores": []}
+
+def guardar_proveedores_config(data):
+    try:
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"[-] Error guardando config: {e}")
+        return False
+
+def registrar_o_actualizar_proveedor(nombre, url_base, categorias_dict=None, margen=50.0, callback_log=None):
+    def log(msg):
+        if callback_log: callback_log(msg)
+        else: print(msg)
+
+    data = cargar_proveedores_config()
+    proveedores = data.get("proveedores", [])
+
+    # Generar ID
+    prov_id = re.sub(r'[^a-z0-9_]+', '_', nombre.lower().strip()).strip('_')
+    
+    # Si no nos pasaron categorías, escanearlas ahora
+    if categorias_dict is None:
+        categorias_dict = descubrir_categorias(url_base, callback_log=callback_log)
+
+    lista_cats = []
+    for u, n in categorias_dict.items():
+        lista_cats.append({
+            "nombre": n,
+            "url": u,
+            "activo": True
+        })
+
+    existente = next((p for p in proveedores if p["id"] == prov_id or p["url"].rstrip('/') == url_base.rstrip('/')), None)
+    
+    if existente:
+        existente["nombre"] = nombre
+        existente["url"] = url_base
+        existente["margen"] = margen
+        # Actualizar o anexar categorías
+        urls_actuales = {c["url"]: c for c in existente.get("categorias", [])}
+        nuevas = []
+        for c in lista_cats:
+            if c["url"] in urls_actuales:
+                nuevas.append(urls_actuales[c["url"]]) # mantener estado activo
+            else:
+                nuevas.append(c)
+        existente["categorias"] = nuevas
+        log(f"💾 Proveedor '{nombre}' actualizado ({len(nuevas)} secciones guardadas).")
+    else:
+        nuevo = {
+            "id": prov_id,
+            "nombre": nombre,
+            "url": url_base,
+            "margen": margen,
+            "activo": True,
+            "ultima_extraccion": None,
+            "categorias": lista_cats
+        }
+        proveedores.append(nuevo)
+        log(f"💾 Proveedor '{nombre}' guardado exitosamente ({len(lista_cats)} secciones).")
+
+    data["proveedores"] = proveedores
+    guardar_proveedores_config(data)
+    return prov_id
+
+def scrapear_secciones_proveedor(proveedor_obj, scrolls_por_cat=10, callback_log=None):
+    def log(msg):
+        if callback_log: callback_log(msg)
+        else: print(msg)
+
+    nombre = proveedor_obj.get("nombre", "Distribuidor Web")
+    margen = float(proveedor_obj.get("margen", 50.0))
+    categorias = proveedor_obj.get("categorias", [])
+    activas = [c for c in categorias if c.get("activo", True)]
+
+    if not activas:
+        log(f"⚠️ El proveedor '{nombre}' no tiene secciones marcadas como activas.")
+        return []
+
+    log("\n" + "="*60)
+    log(f"🚀 INICIANDO RASTREO DE: '{nombre}' ({len(activas)} secciones seleccionadas)")
+    log("="*60)
+
+    todos = []
+    vistos = set()
+
+    for idx, c in enumerate(activas, start=1):
+        cat_nombre = c.get("nombre", "General")
+        cat_url = c.get("url")
+        log(f"\n📂 [{idx}/{len(activas)}] Sección: '{cat_nombre}' ({cat_url})")
+
+        prods = scrapear_scroll_infinito(
+            cat_url,
+            max_scrolls=scrolls_por_cat,
+            proveedor=nombre,
+            margen_ganancia=margen,
+            categoria_nombre=cat_nombre,
+            callback_log=callback_log
+        )
+
+        nuevos = 0
+        for p in prods:
+            clave = p["nombre"].lower().strip()
+            if clave not in vistos and len(p["nombre"]) > 2:
+                vistos.add(clave)
+                todos.append(p)
+                nuevos += 1
+
+        log(f"   -> {nuevos} productos agregados de '{cat_nombre}'. (Subtotal: {len(todos)})")
+
+    # Actualizar fecha de última extracción
+    data = cargar_proveedores_config()
+    for p in data.get("proveedores", []):
+        if p.get("id") == proveedor_obj.get("id"):
+            p["ultima_extraccion"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    guardar_proveedores_config(data)
+
+    return todos
+
 def exportar_archivos(productos, ruta_salida_base="productos_ferrepro"):
     if not productos:
         print("[!] No hay productos para exportar.")

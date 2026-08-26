@@ -1,0 +1,43 @@
+{
+  "proveedores": [
+    {
+      "id": "imagen_pinturerias",
+      "nombre": "Imagen Pinturerías",
+      "url": "https://imagenpinturerias.com.ar",
+      "margen": 50.0,
+      "activo": true,
+      "ultima_extraccion": null,
+      "categorias": [
+        { "nombre": "Pinturas", "url": "https://www.pintureriasimagen.com.ar/pinturas", "activo": true },
+        { "nombre": "Látex Interior", "url": "https://www.pintureriasimagen.com.ar/pinturas/latex-interior", "activo": true },
+        { "nombre": "Látex Exterior", "url": "https://www.pintureriasimagen.com.ar/pinturas/latex-exterior", "activo": true },
+        { "nombre": "Esmalte Sintético", "url": "https://www.pintureriasimagen.com.ar/pinturas/esmalte-sintetico", "activo": true },
+        { "nombre": "Madera", "url": "https://www.pintureriasimagen.com.ar/madera", "activo": true },
+        { "nombre": "Impermeabilizantes", "url": "https://www.pintureriasimagen.com.ar/impermeabilizantes", "activo": true },
+        { "nombre": "Revestimientos", "url": "https://www.pintureriasimagen.com.ar/revestimientos", "activo": true },
+        { "nombre": "Máquinas y Herramientas", "url": "https://www.pintureriasimagen.com.ar/maquinas-y-herramientas", "activo": true },
+        { "nombre": "Construcción en Seco", "url": "https://www.pintureriasimagen.com.ar/construccion-en-seco", "activo": true },
+        { "nombre": "Automotor", "url": "https://www.pintureriasimagen.com.ar/automotor", "activo": false }
+      ]
+    },
+    {
+      "id": "arg_seguridad",
+      "nombre": "ArgSeguridad",
+      "url": "https://argseguridad.com",
+      "margen": 45.0,
+      "activo": true,
+      "ultima_extraccion": null,
+      "categorias": [
+        { "nombre": "Kits de Seguridad", "url": "https://argseguridad.com/137-kits-de-seguridad", "activo": true },
+        { "nombre": "Alarmas", "url": "https://argseguridad.com/75-alarmas", "activo": true },
+        { "nombre": "Kits Alarma Vecinal", "url": "https://argseguridad.com/253-kits-alarma-vecinal", "activo": true },
+        { "nombre": "Video Vigilancia", "url": "https://argseguridad.com/127-video-vigilancia", "activo": true },
+        { "nombre": "Kits Cámaras HD", "url": "https://argseguridad.com/256-kits-camaras-hd", "activo": true },
+        { "nombre": "Kits Cámaras IP", "url": "https://argseguridad.com/257-kits-camaras-ip", "activo": true },
+        { "nombre": "Conectividad", "url": "https://argseguridad.com/conectores-de-video", "activo": true },
+        { "nombre": "Cercos Eléctricos", "url": "https://argseguridad.com/cercos-electricos", "activo": true },
+        { "nombre": "Control de Accesos", "url": "https://argseguridad.com/control-de-accesos", "activo": true }
+      ]
+    }
+  ]
+}

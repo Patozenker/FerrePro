@@ -1,10 +1,4 @@
-requests
-beautifulsoup4
-openpyxl
-pandas
-pdfplumber
-lxml
-playwright
-playwright-cache
-fastapi
-uvicorn
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+openpyxl>=3.1.0

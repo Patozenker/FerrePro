@@ -1,3 +1,91 @@
 export const initClientes = [
-  { id:0, nombre:"Consumidor Final", email:"", tel:"", dir:"", pctGanancia:0, pagos:[], compras:0 },
+  {
+    id: 0,
+    nombre: "Consumidor Final",
+    email: "",
+    tel: "",
+    dir: "",
+    pctGanancia: 0,
+    pagos: [],
+    compras: 0,
+    saldo: 0
+  },
+  {
+    id: 1,
+    nombre: "Construcciones Morales S.R.L.",
+    email: "compras@moralesconstrucciones.com",
+    tel: "11-5566-7788",
+    dir: "Av. Libertador 2400, Olivos",
+    cuit: "30-71458962-4",
+    condIva: "Resp. Inscripto",
+    pctGanancia: -10, // 10% de descuento de gremio
+    saldo: 145000,
+    limiteCredito: 500000,
+    pagos: [
+      { id: 1, fecha: "2026-08-10", monto: 200000, metodo: "transferencia", ref: "TRF-88412" }
+    ],
+    compras: 345000
+  },
+  {
+    id: 2,
+    nombre: "Juan Carlos Rossi (Electricista Matriculado)",
+    email: "rossielectro@gmail.com",
+    tel: "11-6677-8899",
+    dir: "Calle 14 N° 850, Berazategui",
+    cuit: "20-28456123-2",
+    condIva: "Monotributista",
+    pctGanancia: -5,
+    saldo: 0,
+    limiteCredito: 150000,
+    pagos: [
+      { id: 2, fecha: "2026-08-20", monto: 45000, metodo: "efectivo", ref: "EFE-012" }
+    ],
+    compras: 120000
+  },
+  {
+    id: 3,
+    nombre: "Estudio de Arquitectura V&M",
+    email: "administracion@vymarquitectura.com.ar",
+    tel: "11-4433-2211",
+    dir: "Gorriti 4800, Palermo, CABA",
+    cuit: "30-70894561-9",
+    condIva: "Resp. Inscripto",
+    pctGanancia: 0,
+    saldo: 82500,
+    limiteCredito: 300000,
+    pagos: [],
+    compras: 82500
+  },
+  {
+    id: 4,
+    nombre: "Roberto Gómez (Vecino / Cuenta Corriente)",
+    email: "robertogomez@hotmail.com",
+    tel: "11-3322-1100",
+    dir: "Mitre 450, Barrio Centro",
+    cuit: "20-17894562-1",
+    condIva: "Consumidor Final",
+    pctGanancia: 0,
+    saldo: 18400,
+    limiteCredito: 50000,
+    pagos: [
+      { id: 3, fecha: "2026-08-15", monto: 15000, metodo: "débito", ref: "DEB-4512" }
+    ],
+    compras: 33400
+  },
+  {
+    id: 5,
+    nombre: "Plomería & Gas Integral",
+    email: "plomeriaintegral@yahoo.com.ar",
+    tel: "11-7788-9900",
+    dir: "Av. Rivadavia 10200, CABA",
+    cuit: "23-31456789-9",
+    condIva: "Monotributista",
+    pctGanancia: -8,
+    saldo: 0,
+    limiteCredito: 200000,
+    pagos: [
+      { id: 4, fecha: "2026-08-22", monto: 92000, metodo: "transferencia", ref: "TRF-99014" }
+    ],
+    compras: 92000
+  }
 ]

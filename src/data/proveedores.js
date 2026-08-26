@@ -1,1 +1,74 @@
-export const initProveedores = []
+export const initProveedores = [
+  {
+    id: 1,
+    nombre: "Distribuidora Ferretera del Centro",
+    rubro: "Herramientas y General",
+    tel: "11-4567-8901",
+    email: "ventas@distriferre.com.ar",
+    contacto: "Martín Gómez",
+    cuit: "30-71234567-8",
+    direccion: "Av. Juan B. Justo 4520, CABA",
+    condicionPago: "30 días",
+    descuento: 10
+  },
+  {
+    id: 2,
+    nombre: "Pinturas & Revestimientos Alba / Sinteplast",
+    rubro: "Pinturas y Accesorios",
+    tel: "11-4987-6543",
+    email: "pedidos@pinturasdelnorte.com.ar",
+    contacto: "Valeria Ríos",
+    cuit: "30-68954123-4",
+    direccion: "Ruta 8 Km 48, Pilar",
+    condicionPago: "15 días",
+    descuento: 5
+  },
+  {
+    id: 3,
+    nombre: "Electro Materiales S.A.",
+    rubro: "Electricidad e Iluminación",
+    tel: "11-4321-7890",
+    email: "contacto@electromateriales.com.ar",
+    contacto: "Diego Fernández",
+    cuit: "33-70564128-9",
+    direccion: "Av. Belgrano 1850, Avellaneda",
+    condicionPago: "Contado",
+    descuento: 8
+  },
+  {
+    id: 4,
+    nombre: "Plomería & Sanitarios Tigre / IPS",
+    rubro: "Plomería y Conexiones",
+    tel: "11-4455-6677",
+    email: "distribucion@plomeriatigre.com.ar",
+    contacto: "Carlos Sánchez",
+    cuit: "30-55443322-1",
+    direccion: "Colectora Panamericana 2300, San Isidro",
+    condicionPago: "30 días",
+    descuento: 12
+  },
+  {
+    id: 5,
+    nombre: "Bulonería & Fijaciones Industriales",
+    rubro: "Fijaciones y Bulonería",
+    tel: "11-4789-0123",
+    email: "ventas@buloneriaindustrial.com.ar",
+    contacto: "Esteban Rossi",
+    cuit: "30-61239874-5",
+    direccion: "Av. San Martín 3200, Caseros",
+    condicionPago: "Contado / 15 días",
+    descuento: 15
+  },
+  {
+    id: 6,
+    nombre: "Adhesivos & Químicos Fortex / Suprabond",
+    rubro: "Adhesivos y Selladores",
+    tel: "11-4112-3344",
+    email: "info@quimicosfortex.com.ar",
+    contacto: "Luciana Morales",
+    cuit: "30-74125896-3",
+    direccion: "Parque Industrial Tortuguitas",
+    condicionPago: "30 días",
+    descuento: 7
+  }
+]

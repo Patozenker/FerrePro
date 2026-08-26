@@ -1,1 +1,60 @@
-export const initPedidos = []
+export const initPedidos = [
+  {
+    id: 1,
+    fecha: "2026-08-18",
+    fechaVencimiento: "2026-09-05",
+    proveedorId: 1,
+    proveedorNombre: "Distribuidora Ferretera del Centro",
+    items: [
+      { prodId: 1, nombre: "Taladro Percutor 650W Mandril 13mm", qty: 10, costo: 48000, qtyRecibida: 10 },
+      { prodId: 2, nombre: "Amoladora Angular 4 1/2 Pulgadas 850W", qty: 6, costo: 42000, qtyRecibida: 6 },
+      { prodId: 5, nombre: "Cinta Métrica 5m Auto-Lock Profesional", qty: 25, costo: 4500, qtyRecibida: 25 }
+    ],
+    total: 844500,
+    estado: "recibido",
+    nota: "Reposición mensual herramientas"
+  },
+  {
+    id: 2,
+    fecha: "2026-08-22",
+    fechaVencimiento: "2026-08-30",
+    proveedorId: 2,
+    proveedorNombre: "Pinturas & Revestimientos Alba / Sinteplast",
+    items: [
+      { prodId: 11, nombre: "Látex Interior Lavable Antihongo Blanco 20 Lts", qty: 10, costo: 54000, qtyRecibida: 0 },
+      { prodId: 12, nombre: "Esmalte Sintético Satinado Blanco 4 Lts", qty: 8, costo: 24500, qtyRecibida: 0 }
+    ],
+    total: 736000,
+    estado: "enviado",
+    nota: "Pedido urgente para obra"
+  },
+  {
+    id: 3,
+    fecha: "2026-08-24",
+    fechaVencimiento: "2026-09-10",
+    proveedorId: 5,
+    proveedorNombre: "Bulonería & Fijaciones Industriales",
+    items: [
+      { prodId: 7, nombre: "Tornillo Autoperforante T1 Punta Aguja 8x1/2 (Caja x 1000)", qty: 20, costo: 12500, qtyRecibida: 10 },
+      { prodId: 8, nombre: "Tornillo Drywall T2 Rosca Fina 6x1 (Caja x 1000)", qty: 20, costo: 11000, qtyRecibida: 20 },
+      { prodId: 9, nombre: "Tarugo Nylon N° 8 con Tope (Bolsa x 100)", qty: 30, costo: 3200, qtyRecibida: 30 }
+    ],
+    total: 566000,
+    estado: "en_tránsito",
+    nota: "Entrega parcial recibida el 25/08"
+  },
+  {
+    id: 4,
+    fecha: "2026-08-26",
+    fechaVencimiento: "2026-09-15",
+    proveedorId: 3,
+    proveedorNombre: "Electro Materiales S.A.",
+    items: [
+      { prodId: 15, nombre: "Cable Unipolar 2.5 mm² Normalizado (Rollo 100m) Celeste", qty: 10, costo: 38000, qtyRecibida: 0 },
+      { prodId: 16, nombre: "Cable Unipolar 2.5 mm² Normalizado (Rollo 100m) Marrón", qty: 10, costo: 38000, qtyRecibida: 0 }
+    ],
+    total: 760000,
+    estado: "pendiente",
+    nota: "A confirmar con transporte"
+  }
+]

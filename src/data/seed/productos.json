@@ -1,3 +1,477 @@
 [
-  
+  {
+    "id": 1,
+    "sku": "HER-00001",
+    "nombre": "Taladro Percutor 650W Mandril 13mm",
+    "cat": "Herramientas",
+    "cats": [
+      "Herramientas"
+    ],
+    "costo": 48000,
+    "venta": 72000,
+    "margen": 50,
+    "stock": 12,
+    "minStock": 3,
+    "moneda": "ARS",
+    "provId": 1,
+    "ubicacion": "Pasillo 1 - Estante A",
+    "imagen": "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Taladro percutor con selector de impacto y velocidad variable reversible."
+  },
+  {
+    "id": 2,
+    "sku": "HER-00002",
+    "nombre": "Amoladora Angular 4 1/2 Pulgadas 850W",
+    "cat": "Herramientas",
+    "cats": [
+      "Herramientas"
+    ],
+    "costo": 42000,
+    "venta": 63000,
+    "margen": 50,
+    "stock": 8,
+    "minStock": 2,
+    "moneda": "ARS",
+    "provId": 1,
+    "ubicacion": "Pasillo 1 - Estante B",
+    "imagen": "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Amoladora para corte y desbaste en metal y mampostería."
+  },
+  {
+    "id": 3,
+    "sku": "HER-00003",
+    "nombre": "Juego Llaves Combinadas 6 a 22mm (12 Piezas)",
+    "cat": "Herramientas",
+    "cats": [
+      "Herramientas"
+    ],
+    "costo": 28000,
+    "venta": 44800,
+    "margen": 60,
+    "stock": 15,
+    "minStock": 4,
+    "moneda": "ARS",
+    "provId": 1,
+    "ubicacion": "Pasillo 1 - Estante C",
+    "imagen": "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Juego de llaves cromo vanadio forjadas con estuche organizador."
+  },
+  {
+    "id": 4,
+    "sku": "HER-00004",
+    "nombre": "Martillo Galponero Mango Fibra 500g",
+    "cat": "Herramientas",
+    "cats": [
+      "Herramientas"
+    ],
+    "costo": 9500,
+    "venta": 15200,
+    "margen": 60,
+    "stock": 20,
+    "minStock": 5,
+    "moneda": "ARS",
+    "provId": 1,
+    "ubicacion": "Pasillo 1 - Estante D",
+    "imagen": "https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Martillo con uña sacaclavos y mango antideslizante con fibra de vidrio."
+  },
+  {
+    "id": 5,
+    "sku": "HER-00005",
+    "nombre": "Cinta Métrica 5m Auto-Lock Profesional",
+    "cat": "Herramientas",
+    "cats": [
+      "Herramientas"
+    ],
+    "costo": 4500,
+    "venta": 7650,
+    "margen": 70,
+    "stock": 35,
+    "minStock": 8,
+    "moneda": "ARS",
+    "provId": 1,
+    "ubicacion": "Caja Mostrador",
+    "imagen": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Cinta métrica con freno automático y gancho imantado."
+  },
+  {
+    "id": 6,
+    "sku": "HER-00006",
+    "nombre": "Nivel de Aluminio 60cm con 3 Gotas",
+    "cat": "Herramientas",
+    "cats": [
+      "Herramientas"
+    ],
+    "costo": 8200,
+    "venta": 13940,
+    "margen": 70,
+    "stock": 10,
+    "minStock": 3,
+    "moneda": "ARS",
+    "provId": 1,
+    "ubicacion": "Pasillo 1 - Estante D",
+    "imagen": "https://images.unsplash.com/photo-1580983218765-f663bec07b37?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Nivel de perfil de aluminio reforzado con gotas calibradas."
+  },
+  {
+    "id": 7,
+    "sku": "FIJ-00001",
+    "nombre": "Tornillo Autoperforante T1 Punta Aguja 8x1/2 (Caja x 1000)",
+    "cat": "Fijaciones",
+    "cats": [
+      "Fijaciones"
+    ],
+    "costo": 12500,
+    "venta": 20000,
+    "margen": 60,
+    "stock": 25,
+    "minStock": 5,
+    "moneda": "ARS",
+    "provId": 5,
+    "ubicacion": "Pasillo 2 - Estante A",
+    "imagen": "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Tornillo para perfilería drywall y chapa fina zincado."
+  },
+  {
+    "id": 8,
+    "sku": "FIJ-00002",
+    "nombre": "Tornillo Drywall T2 Rosca Fina 6x1 (Caja x 1000)",
+    "cat": "Fijaciones",
+    "cats": [
+      "Fijaciones"
+    ],
+    "costo": 11000,
+    "venta": 17600,
+    "margen": 60,
+    "stock": 30,
+    "minStock": 6,
+    "moneda": "ARS",
+    "provId": 5,
+    "ubicacion": "Pasillo 2 - Estante A",
+    "imagen": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Tornillo fosfatizado negro para fijación de placas de yeso."
+  },
+  {
+    "id": 9,
+    "sku": "FIJ-00003",
+    "nombre": "Tarugo Nylon N° 8 con Tope (Bolsa x 100)",
+    "cat": "Fijaciones",
+    "cats": [
+      "Fijaciones"
+    ],
+    "costo": 3200,
+    "venta": 5760,
+    "margen": 80,
+    "stock": 45,
+    "minStock": 10,
+    "moneda": "ARS",
+    "provId": 5,
+    "ubicacion": "Pasillo 2 - Gaveta 4",
+    "imagen": "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Tarugo de poliamida virgen para mampostería maciza y hueca."
+  },
+  {
+    "id": 10,
+    "sku": "FIJ-00004",
+    "nombre": "Tirafondo Hexagonal 1/4 x 2 1/2 con Tarugo (Bolsa x 50)",
+    "cat": "Fijaciones",
+    "cats": [
+      "Fijaciones"
+    ],
+    "costo": 8900,
+    "venta": 15130,
+    "margen": 70,
+    "stock": 18,
+    "minStock": 4,
+    "moneda": "ARS",
+    "provId": 5,
+    "ubicacion": "Pasillo 2 - Gaveta 8",
+    "imagen": "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Tirafondo zincado con cabeza hexagonal para cargas pesadas."
+  },
+  {
+    "id": 11,
+    "sku": "PIN-00001",
+    "nombre": "Látex Interior Lavable Antihongo Blanco 20 Lts",
+    "cat": "Pinturas",
+    "cats": [
+      "Pinturas"
+    ],
+    "costo": 54000,
+    "venta": 81000,
+    "margen": 50,
+    "stock": 14,
+    "minStock": 4,
+    "moneda": "ARS",
+    "provId": 2,
+    "ubicacion": "Sector Pinturas - Tarima 1",
+    "imagen": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Pintura al látex de alto poder cubritivo y acabado mate sedoso."
+  },
+  {
+    "id": 12,
+    "sku": "PIN-00002",
+    "nombre": "Esmalte Sintético Satinado Blanco 4 Lts",
+    "cat": "Pinturas",
+    "cats": [
+      "Pinturas"
+    ],
+    "costo": 24500,
+    "venta": 39200,
+    "margen": 60,
+    "stock": 9,
+    "minStock": 3,
+    "moneda": "ARS",
+    "provId": 2,
+    "ubicacion": "Sector Pinturas - Estante 2",
+    "imagen": "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Esmalte sintético triple acción (antióxido, convertidor y esmalte)."
+  },
+  {
+    "id": 13,
+    "sku": "PIN-00003",
+    "nombre": "Pincel Profesional N° 20 Cerdas Puras",
+    "cat": "Pinturas",
+    "cats": [
+      "Pinturas"
+    ],
+    "costo": 2900,
+    "venta": 5220,
+    "margen": 80,
+    "stock": 28,
+    "minStock": 6,
+    "moneda": "ARS",
+    "provId": 2,
+    "ubicacion": "Sector Pinturas - Expositor",
+    "imagen": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Pincel virola 1 para esmaltes y barnices sin dejar marcas."
+  },
+  {
+    "id": 14,
+    "sku": "PIN-00004",
+    "nombre": "Rodillo Lana Pelo Medio 22cm con Mango",
+    "cat": "Pinturas",
+    "cats": [
+      "Pinturas"
+    ],
+    "costo": 4800,
+    "venta": 8640,
+    "margen": 80,
+    "stock": 22,
+    "minStock": 5,
+    "moneda": "ARS",
+    "provId": 2,
+    "ubicacion": "Sector Pinturas - Expositor",
+    "imagen": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Rodillo de lana natural para látex y superficies rugosas o lisas."
+  },
+  {
+    "id": 15,
+    "sku": "ELE-00001",
+    "nombre": "Cable Unipolar 2.5 mm² Normalizado (Rollo 100m) Celeste",
+    "cat": "Electricidad",
+    "cats": [
+      "Electricidad"
+    ],
+    "costo": 38000,
+    "venta": 57000,
+    "margen": 50,
+    "stock": 16,
+    "minStock": 4,
+    "moneda": "ARS",
+    "provId": 3,
+    "ubicacion": "Pasillo 3 - Tarima Cables",
+    "imagen": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Cable de cobre electrolítico de 100m con aislación antillama IRAM."
+  },
+  {
+    "id": 16,
+    "sku": "ELE-00002",
+    "nombre": "Cable Unipolar 2.5 mm² Normalizado (Rollo 100m) Marrón",
+    "cat": "Electricidad",
+    "cats": [
+      "Electricidad"
+    ],
+    "costo": 38000,
+    "venta": 57000,
+    "margen": 50,
+    "stock": 18,
+    "minStock": 4,
+    "moneda": "ARS",
+    "provId": 3,
+    "ubicacion": "Pasillo 3 - Tarima Cables",
+    "imagen": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Cable de cobre electrolítico de 100m con aislación antillama IRAM."
+  },
+  {
+    "id": 17,
+    "sku": "ELE-00003",
+    "nombre": "Termomagnética Bipolar 2x20A Curva C",
+    "cat": "Electricidad",
+    "cats": [
+      "Electricidad"
+    ],
+    "costo": 7800,
+    "venta": 13260,
+    "margen": 70,
+    "stock": 24,
+    "minStock": 5,
+    "moneda": "ARS",
+    "provId": 3,
+    "ubicacion": "Pasillo 3 - Vitrina",
+    "imagen": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Interruptor termomagnético 3kA para riel DIN estándar."
+  },
+  {
+    "id": 18,
+    "sku": "ELE-00004",
+    "nombre": "Disyuntor Diferencial Bipolar 2x25A 30mA",
+    "cat": "Electricidad",
+    "cats": [
+      "Electricidad"
+    ],
+    "costo": 22000,
+    "venta": 35200,
+    "margen": 60,
+    "stock": 11,
+    "minStock": 3,
+    "moneda": "ARS",
+    "provId": 3,
+    "ubicacion": "Pasillo 3 - Vitrina",
+    "imagen": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Protector diferencial contra fugas a tierra de alta sensibilidad."
+  },
+  {
+    "id": 19,
+    "sku": "ELE-00005",
+    "nombre": "Cinta Aisladora PVC 20m Negra",
+    "cat": "Electricidad",
+    "cats": [
+      "Electricidad"
+    ],
+    "costo": 1100,
+    "venta": 2200,
+    "margen": 100,
+    "stock": 60,
+    "minStock": 15,
+    "moneda": "ARS",
+    "provId": 3,
+    "ubicacion": "Caja Mostrador",
+    "imagen": "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Cinta aisladora ignífuga autoextinguible hasta 600V."
+  },
+  {
+    "id": 20,
+    "sku": "PLO-00001",
+    "nombre": "Caño Termofusión 20mm x 4m Agua Fría/Caliente",
+    "cat": "Plomería",
+    "cats": [
+      "Plomería"
+    ],
+    "costo": 6800,
+    "venta": 11560,
+    "margen": 70,
+    "stock": 40,
+    "minStock": 10,
+    "moneda": "ARS",
+    "provId": 4,
+    "ubicacion": "Patio / Cañero",
+    "imagen": "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Tubo de polipropileno copolímero random para termofusión PN20."
+  },
+  {
+    "id": 21,
+    "sku": "PLO-00002",
+    "nombre": "Válvula Esférica de Paso Total 1/2 Pulgada Bronce",
+    "cat": "Plomería",
+    "cats": [
+      "Plomería"
+    ],
+    "costo": 8400,
+    "venta": 14280,
+    "margen": 70,
+    "stock": 19,
+    "minStock": 4,
+    "moneda": "ARS",
+    "provId": 4,
+    "ubicacion": "Pasillo 4 - Estante A",
+    "imagen": "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Llave de paso de bola cromada con manija mariposa metálica."
+  },
+  {
+    "id": 22,
+    "sku": "PLO-00003",
+    "nombre": "Cinta Selladora Teflón Alta Densidad 3/4 x 20m",
+    "cat": "Plomería",
+    "cats": [
+      "Plomería"
+    ],
+    "costo": 900,
+    "venta": 1800,
+    "margen": 100,
+    "stock": 50,
+    "minStock": 12,
+    "moneda": "ARS",
+    "provId": 4,
+    "ubicacion": "Caja Mostrador",
+    "imagen": "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Cinta de teflón para roscas de agua y gas alta densidad."
+  },
+  {
+    "id": 23,
+    "sku": "ADH-00001",
+    "nombre": "Silicona Neutra Transparente Cartucho 280ml",
+    "cat": "Adhesivos",
+    "cats": [
+      "Adhesivos"
+    ],
+    "costo": 5200,
+    "venta": 9360,
+    "margen": 80,
+    "stock": 30,
+    "minStock": 6,
+    "moneda": "ARS",
+    "provId": 6,
+    "ubicacion": "Pasillo 2 - Estante C",
+    "imagen": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Sellador de silicona neutro para vidrios, aluminio, baños y aberturas."
+  },
+  {
+    "id": 24,
+    "sku": "ADH-00002",
+    "nombre": "Espuma de Poliuretano Expandible Aerosol 500ml",
+    "cat": "Adhesivos",
+    "cats": [
+      "Adhesivos"
+    ],
+    "costo": 6900,
+    "venta": 11730,
+    "margen": 70,
+    "stock": 20,
+    "minStock": 4,
+    "moneda": "ARS",
+    "provId": 6,
+    "ubicacion": "Pasillo 2 - Estante C",
+    "imagen": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Espuma para fijación y aislamiento térmico y acústico de marcos y aberturas."
+  },
+  {
+    "id": 25,
+    "sku": "ADH-00003",
+    "nombre": "Adhesivo de Montaje Agarre Inmediato 300g",
+    "cat": "Adhesivos",
+    "cats": [
+      "Adhesivos"
+    ],
+    "costo": 4800,
+    "venta": 8640,
+    "margen": 80,
+    "stock": 25,
+    "minStock": 5,
+    "moneda": "ARS",
+    "provId": 6,
+    "ubicacion": "Pasillo 2 - Estante C",
+    "imagen": "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    "descripcion": "Adhesivo de agarre instantáneo sin necesidad de clavos ni tornillos."
+  }
 ]

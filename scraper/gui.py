@@ -382,7 +382,13 @@ class ScraperGUI(tk.Tk):
                 margen = 50.0
 
             dialog.destroy()
-            self.log(f"▶ Escaneando menú y registrando proveedor: {nombre} ({url})...")
+            
+            # Mostrar de inmediato en la lista lateral con estado de escaneo
+            self.prov_listbox.insert(tk.END, f"⏳ {nombre} (Escaneando menú...)")
+            self.log(f"\n▶ Registrando nuevo proveedor: '{nombre}'")
+            self.log(f"   URL: {url}")
+            self.log(f"   Escaneando mega-menús y secciones en segundo plano...")
+            
             threading.Thread(target=self._run_register_prov, args=(nombre, url, margen), daemon=True).start()
 
         tk.Button(dialog, text="🔍 Escanear Menú y Guardar Proveedor", font=("Segoe UI", 10, "bold"), bg="#f97316", fg="#fff", bd=0, cursor="hand2", pady=8, command=do_save).pack(fill=tk.X, padx=20)
@@ -391,11 +397,25 @@ class ScraperGUI(tk.Tk):
         try:
             prov_id = registrar_o_actualizar_proveedor(nombre, url, margen=margen, callback_log=self.log)
             self.selected_prov_id = prov_id
-            self.load_proveedores_list()
-            messagebox.showinfo("Éxito", f"¡Proveedor '{nombre}' guardado con éxito!\n\nYa podés seleccionar sus secciones y extraer precios.")
+            
+            # Actualizar GUI en el hilo principal de forma segura
+            self.after(0, self._on_register_prov_success, nombre)
         except Exception as e:
             self.log(f"❌ Error al registrar proveedor: {e}")
-            messagebox.showerror("Error", f"Error: {e}")
+            self.after(0, lambda: messagebox.showerror("Error", f"Error escaneando proveedor:\n{e}"))
+            self.after(0, self.load_proveedores_list)
+
+    def _on_register_prov_success(self, nombre):
+        self.load_proveedores_list()
+        # Seleccionar el recién agregado
+        proveedores = self.config_data.get("proveedores", [])
+        for idx, p in enumerate(proveedores):
+            if p.get("id") == self.selected_prov_id:
+                self.prov_listbox.selection_clear(0, tk.END)
+                self.prov_listbox.selection_set(idx)
+                self.on_select_proveedor(None)
+                break
+        messagebox.showinfo("Éxito", f"¡Proveedor '{nombre}' guardado con éxito!\n\nYa podés ver todas sus secciones en pantalla y marcar las que quieras scrapear.")
 
     def rescan_selected_proveedor(self):
         if not self.selected_prov_id:

@@ -12,7 +12,7 @@ o scroll infinito / JavaScript en 1 solo clic.
 import sys
 import os
 import threading
-import subprocess
+from datetime import datetime
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -192,8 +192,11 @@ class ScraperGUI(tk.Tk):
                 self.log("⚠️ No se encontraron productos en la URL provista.")
                 messagebox.showwarning("Sin resultados", "No se detectaron productos. Verificá si la página requiere inicio de sesión o tiene protección anti-bot.")
             else:
-                timestamp = Path.cwd() / "scraper" / f"productos_extraidos"
-                csv_path, xlsx_path = exportar_archivos(productos, ruta_salida_base=str(timestamp))
+                base_dir = Path(__file__).resolve().parent
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_base = base_dir / f"productos_{timestamp}"
+                
+                csv_path, xlsx_path = exportar_archivos(productos, ruta_salida_base=str(output_base))
                 self.last_csv = csv_path
                 self.last_xlsx = xlsx_path
 
@@ -214,9 +217,8 @@ class ScraperGUI(tk.Tk):
             os.startfile(self.last_csv)
 
     def open_folder(self):
-        folder = Path.cwd() / "scraper"
-        folder.mkdir(exist_ok=True)
-        os.startfile(folder)
+        base_dir = Path(__file__).resolve().parent
+        os.startfile(base_dir)
 
 if __name__ == "__main__":
     app = ScraperGUI()

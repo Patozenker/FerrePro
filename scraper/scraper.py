@@ -506,8 +506,12 @@ def exportar_archivos(productos, ruta_salida_base="productos_ferrepro"):
     ]
     df_clean = df[[c for c in columnas if c in df.columns]]
 
-    csv_path = f"{ruta_salida_base}.csv"
-    xlsx_path = f"{ruta_salida_base}.xlsx"
+    # Asegurar que el directorio padre exista
+    out_file = Path(ruta_salida_base).resolve()
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+
+    csv_path = str(out_file) + (".csv" if not str(out_file).endswith(".csv") else "")
+    xlsx_path = str(out_file) + (".xlsx" if not str(out_file).endswith(".xlsx") else "")
 
     df_clean.to_csv(csv_path, index=False, encoding='utf-8-sig')
     try:

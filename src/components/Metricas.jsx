@@ -120,18 +120,65 @@ export default function Metricas({ productos, ventas, clientes, allCats }) {
   const caudalReal  = loadCaudalData()
   const caudalData  = caudalPeriod==="hora"?caudalReal.horaData:caudalPeriod==="dia"?caudalReal.semanaData:caudalReal.mesData
 
-  const tooltipStyle = {
-    contentStyle: {
-      background: C.card,
-      border: `1px solid ${C.border}`,
-      borderRadius: 8,
-      fontSize: 12,
-      color: C.text,
-      boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-    },
-    itemStyle: { color: C.text, fontSize: 12 },
-    labelStyle: { color: C.white, fontWeight: 700, marginBottom: 4 },
-    formatter: v => [fmt(v)]
+  // Tooltips personalizados con alto contraste (evitan overrides de Recharts en modo oscuro)
+  const PieCustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0]
+      const totalPie = catPie.reduce((acc, curr) => acc + curr.value, 0)
+      const pct = totalPie > 0 ? ((data.value / totalPie) * 100).toFixed(1) : 0
+      return (
+        <div style={{
+          background: C.card,
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '8px 12px',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
+          pointerEvents: 'none'
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.subtle, marginBottom: 2 }}>
+            {data.name}
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: C.white, fontFamily: 'monospace' }}>
+            {fmt(data.value)}
+            <span style={{ fontSize: 11, fontWeight: 600, color: C.accent, marginLeft: 6 }}>
+              ({pct}%)
+            </span>
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
+
+  const BarCustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{
+          background: C.card,
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '8px 12px',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
+          pointerEvents: 'none'
+        }}>
+          {label && (
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.subtle, marginBottom: 3 }}>
+              {label}
+            </div>
+          )}
+          {payload.map((entry, idx) => (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginTop: idx > 0 ? 3 : 0 }}>
+              {entry.color && <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color }} />}
+              <span style={{ color: C.text }}>{entry.name || 'Total'}:</span>
+              <span style={{ fontWeight: 800, color: C.white, fontFamily: 'monospace' }}>
+                {typeof entry.value === 'number' && entry.value >= 100 ? fmt(entry.value) : entry.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )
+    }
+    return null
   }
 
   return (
@@ -168,24 +215,8 @@ export default function Metricas({ productos, ventas, clientes, allCats }) {
               <Pie data={catPie} cx="50%" cy="50%" outerRadius={80} paddingAngle={3} dataKey="value">
                 {catPie.map((_,i)=><Cell key={i} fill={pieColors[i%pieColors.length]}/>)}
               </Pie>
-              <Tooltip
-                contentStyle={{
-                  background: C.card,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 8,
-                  fontSize: 12,
-                  color: C.text,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-                }}
-                itemStyle={{ color: C.text }}
-                labelStyle={{ color: C.white, fontWeight: 700 }}
-                formatter={(v, name) => {
-                  const tot = catPie.reduce((a, b) => a + b.value, 0)
-                  const pct = tot > 0 ? ((v / tot) * 100).toFixed(1) : 0
-                  return [`${fmt(v)} (${pct}%)`, name]
-                }}
-              />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{fontSize:11,color:C.muted}}/>
+              <Tooltip content={<PieCustomTooltip />}/>
+              <Legend iconType="circle" iconSize={8} formatter={val => <span style={{ color: C.text, fontSize: 11, marginLeft: 3 }}>{val}</span>}/>
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -196,7 +227,7 @@ export default function Metricas({ productos, ventas, clientes, allCats }) {
               <CartesianGrid strokeDasharray="3 3" stroke={C.chartGrid} horizontal={false}/>
               <XAxis type="number" tick={{fill:C.muted,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`${v/1000}k`}/>
               <YAxis type="category" dataKey="name" tick={{fill:C.muted,fontSize:9}} axisLine={false} tickLine={false} width={110}/>
-              <Tooltip {...tooltipStyle}/>
+              <Tooltip content={<BarCustomTooltip />}/>
               <Bar dataKey="v" fill={C.accent} radius={[0,4,4,0]}/>
             </BarChart>
           </ResponsiveContainer>
@@ -267,7 +298,7 @@ export default function Metricas({ productos, ventas, clientes, allCats }) {
             <CartesianGrid strokeDasharray="3 3" stroke={C.chartGrid}/>
             <XAxis dataKey="t" tick={{fill:C.muted,fontSize:11}} axisLine={false} tickLine={false}/>
             <YAxis tick={{fill:C.muted,fontSize:11}} axisLine={false} tickLine={false}/>
-            <Tooltip {...tooltipStyle} formatter={(val, name)=>[val, name]}/>
+            <Tooltip content={<BarCustomTooltip />}/>
             <Bar dataKey="compro"   name="Compró"       fill={C.green}  radius={[3,3,0,0]} stackId="a"/>
             <Bar dataKey="noCompro" name="No compró"    fill={C.yellow} radius={[3,3,0,0]} stackId="a"/>
             <Bar dataKey="noTengo"  name="No tenemos"   fill={C.red}    radius={[3,3,0,0]} stackId="a"/>

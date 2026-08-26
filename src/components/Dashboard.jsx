@@ -178,18 +178,35 @@ export default function Dashboard({ productos, ventas, clientes, pedidos=[], pag
     })).filter(x => x.v > 0)
   }, [catPeriod, ventas, productos, allCats])
 
-  const tt = {
-    contentStyle: {
-      background: C.card,
-      border: `1px solid ${C.border}`,
-      borderRadius: 8,
-      fontSize: 12,
-      color: C.text,
-      boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-    },
-    itemStyle: { color: C.text, fontSize: 12 },
-    labelStyle: { color: C.white, fontWeight: 700, marginBottom: 4 },
-    formatter: v => [fmt(v)]
+  const ChartCustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{
+          background: C.card,
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '8px 12px',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
+          pointerEvents: 'none'
+        }}>
+          {label && (
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.subtle, marginBottom: 3 }}>
+              {label}
+            </div>
+          )}
+          {payload.map((entry, idx) => (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginTop: idx > 0 ? 3 : 0 }}>
+              {entry.color && <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color }} />}
+              <span style={{ color: C.text }}>{entry.name || 'Total'}:</span>
+              <span style={{ fontWeight: 800, color: C.white, fontFamily: 'monospace' }}>
+                {typeof entry.value === 'number' ? fmt(entry.value) : entry.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )
+    }
+    return null
   }
 
   return (
@@ -262,7 +279,8 @@ export default function Dashboard({ productos, ventas, clientes, pedidos=[], pag
               <CartesianGrid strokeDasharray="3 3" stroke={C.chartGrid}/>
               <XAxis dataKey="t" tick={{fill:C.muted,fontSize:10}} axisLine={false} tickLine={false}/>
               <YAxis tick={{fill:C.muted,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
-              <Tooltip {...tt}/><Area type="monotone" dataKey="v" stroke={C.accent} strokeWidth={2} fill="url(#gv)"/>
+              <Tooltip content={<ChartCustomTooltip />}/>
+              <Area type="monotone" dataKey="v" stroke={C.accent} strokeWidth={2} fill="url(#gv)"/>
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -276,7 +294,8 @@ export default function Dashboard({ productos, ventas, clientes, pedidos=[], pag
               <CartesianGrid strokeDasharray="3 3" stroke={C.chartGrid}/>
               <XAxis dataKey="t" tick={{fill:C.muted,fontSize:10}} axisLine={false} tickLine={false}/>
               <YAxis tick={{fill:C.muted,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
-              <Tooltip {...tt}/><Area type="monotone" dataKey="v" stroke={C.red} strokeWidth={2} fill="url(#gg)"/>
+              <Tooltip content={<ChartCustomTooltip />}/>
+              <Area type="monotone" dataKey="v" stroke={C.red} strokeWidth={2} fill="url(#gg)"/>
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -293,7 +312,8 @@ export default function Dashboard({ productos, ventas, clientes, pedidos=[], pag
               <CartesianGrid strokeDasharray="3 3" stroke={C.chartGrid}/>
               <XAxis dataKey="cat" tick={{fill:C.muted,fontSize:10}} axisLine={false} tickLine={false}/>
               <YAxis tick={{fill:C.muted,fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
-              <Tooltip {...tt}/><Bar dataKey="v" fill={C.blue} radius={[4,4,0,0]}/>
+              <Tooltip content={<ChartCustomTooltip />}/>
+              <Bar dataKey="v" fill={C.blue} radius={[4,4,0,0]}/>
             </BarChart>
           </ResponsiveContainer>
         </div>

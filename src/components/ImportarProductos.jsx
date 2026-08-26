@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Upload, FileSpreadsheet, Camera, Globe, X, CheckCircle2, AlertTriangle, Plus, Trash2 } from 'lucide-react'
+import { Upload, FileSpreadsheet, Camera, Globe, X, CheckCircle2, AlertTriangle, Plus, Trash2, Image as ImageIcon } from 'lucide-react'
 import { useTheme } from '../ThemeContext'
 import { nextId } from '../utils'
 import * as XLSX from 'xlsx'
@@ -12,6 +12,7 @@ const MAPEO_COLS = {
   stock:    ["stock","cantidad","qty","quantity","existencia","existencias","cant","saldo"],
   minStock: ["min","minimo","stock_minimo","min_stock","stock minimo","alerta","punto pedido"],
   cat:      ["categoria","category","cat","rubro","tipo","type","familia","linea"],
+  foto:     ["foto","imagen","image","img","picture","thumbnail","enlace_foto","url_foto","url_imagen"],
 }
 
 function detectarCol(headers, campo) {
@@ -43,14 +44,16 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
   const [newCat, setNewCat]     = useState("")
   const [listaName, setListaName] = useState("")
   const [bulkCat, setBulkCat]     = useState("")
+  const [margenGanancia, setMargenGanancia] = useState(50)
   const fileRef = useRef()
   const imgRef  = useRef()
 
   const allCats = [...(categoriasExtra || [])]
 
-  const buildPreview = (rows, hdrs, mp, cats) => {
+  const buildPreview = (rows, hdrs, mp, cats, margen = margenGanancia) => {
     const errs = []
-    const items = rows.slice(0, 500).map((row, i) => {
+    // Procesar todos los productos sin límite de 500
+    const items = rows.map((row, i) => {
       const get = campo => {
         const col = mp[campo] || detectarCol(hdrs, campo)
         return col ? (row[col] ?? '') : ''
@@ -58,20 +61,25 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
       const nombre = String(get("nombre")).trim()
       if (!nombre || nombre === '0') { if (i < 50) errs.push(`Fila ${i+2}: sin nombre`); return null }
       const costo  = parseNum(get("costo"))
-      const venta  = parseNum(get("venta"))
+      const ventaRaw = parseNum(get("venta"))
+      const venta  = ventaRaw > 0 ? ventaRaw : costo > 0 ? Math.round(costo * (1 + (margen || 50) / 100)) : 0
       const catRaw = String(get("cat")).trim()
       // buscar cat en lista o usar como está si no está vacía
       const catMatch = cats.find(c => catRaw.toLowerCase().includes(c.toLowerCase().slice(0,4)))
       const cat = catMatch || (catRaw && catRaw !== '0' ? catRaw : cats[0])
+      const foto = String(get("foto") || '').trim()
+
       return {
         _id: i,
-        sku:      String(get("sku")).trim() || `IMP-${String(i+1).padStart(3,"0")}`,
+        sku:      String(get("sku")).trim() || `IMP-${String(i+1).padStart(4,"0")}`,
         nombre,
         cat,
         costo,
-        venta:    venta > 0 ? venta : costo > 0 ? Math.round(costo * 1.6) : 0,
-        stock:    parseInt(get("stock")) || 0,
-        minStock: parseInt(get("minStock")) || 5,
+        venta,
+        stock:    parseInt(get("stock")) || 0, // Stock en 0 por defecto para listas de precios
+        minStock: parseInt(get("minStock")) || 3,
+        foto,
+        imagen:   foto,
         provId:   +provId,
         _ok: true,
       }
@@ -287,13 +295,13 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
         </div>
       </div>
 
-      {/* Lista name + bulk cat */}
-      <div style={{ display:"flex", gap:10, marginBottom:12, flexWrap:"wrap" }}>
-        <div style={{ flex:1 }}>
+      {/* Lista name + bulk cat + margen */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 200px 220px", gap:10, marginBottom:12 }}>
+        <div>
           <label style={s.label}>Nombre de la lista (para historial de precios)</label>
           <input style={s.input} placeholder="Lista Mar 2026..." value={listaName} onChange={e=>setListaName(e.target.value)}/>
         </div>
-        <div style={{ flex:"0 0 200px" }}>
+        <div>
           <label style={s.label}>Cambiar categoría a todos</label>
           <div style={{ display:"flex", gap:6 }}>
             <select style={s.input} value={bulkCat} onChange={e=>setBulkCat(e.target.value)}>
@@ -301,6 +309,17 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
               {allCats.map(c=><option key={c}>{c}</option>)}
             </select>
             <button style={{ ...s.btn("ghost"), padding:"8px 10px", flexShrink:0 }} onClick={()=>{ if(bulkCat) setPreview(p=>p.map(x=>({...x,cat:bulkCat}))) }}>✓</button>
+          </div>
+        </div>
+        <div>
+          <label style={s.label}>Margen % de ganancia</label>
+          <div style={{ display:"flex", gap:6 }}>
+            <input style={{ ...s.input, width:70 }} type="number" value={margenGanancia} onChange={e=>setMargenGanancia(Number(e.target.value))}/>
+            <button style={{ ...s.btn("ghost"), padding:"8px 10px", flexShrink:0, fontSize:11 }}
+              title="Aplica este % a todos los costos para calcular el P. Venta"
+              onClick={()=>{
+                setPreview(p=>p.map(x=>({ ...x, venta: x.costo > 0 ? Math.round(x.costo * (1 + (margenGanancia||0)/100)) : x.venta })))
+              }}>⚡ Recalcular</button>
           </div>
         </div>
       </div>
@@ -337,11 +356,11 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
             style={{ border:`2px dashed ${C.border}`, borderRadius:12, padding:36, textAlign:"center", cursor:"pointer", marginBottom:12 }}>
             <Upload size={28} color={C.muted} style={{ marginBottom:8 }}/>
             <div style={{ fontSize:14, color:C.subtle, fontWeight:600 }}>Arrastrá o hacé click para subir</div>
-            <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>.xlsx · .xls · .csv — hasta 500 productos</div>
+            <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>.xlsx · .xls · .csv — catálogos completos sin límite de productos</div>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display:"none" }} onChange={e=>handleFile(e.target.files[0])}/>
           </div>
           <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>
-            <strong style={{ color:C.subtle }}>Columnas reconocidas:</strong> nombre/producto · sku/codigo · costo/precio_compra · venta/precio/lista · stock/cantidad · categoria/rubro · min/minimo
+            <strong style={{ color:C.subtle }}>Columnas reconocidas:</strong> nombre/producto · sku/codigo · costo/precio_compra · venta/precio/lista · stock/cantidad · categoria/rubro · foto/imagen · min/minimo
           </div>
           {/* Mapeo */}
           {headers.length > 0 && rawRows.length > 0 && (
@@ -377,7 +396,7 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
       {tab==="web" && (
         <div style={{ marginBottom:12 }}>
           <div style={{ padding:"8px 12px",background:`${C.blue}15`,border:`1px solid ${C.blue}30`,borderRadius:8,marginBottom:12,fontSize:12,color:C.blue }}>
-            Requiere el servidor de scraping corriendo: <code style={{ background:C.surface,padding:"1px 6px",borderRadius:4 }}>uvicorn app:app --reload --port 8000</code>
+            💡 Podés usar el <strong>Scraper Independiente</strong> (en la carpeta <code>scraper/</code>) para extraer cualquier sitio con Scroll Infinito y arrastrar el CSV aquí.
           </div>
           <label style={s.label}>URL de la categoría/listado de productos del proveedor</label>
           <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -416,38 +435,54 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
       {preview.length>0 && (
         <div>
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10 }}>
-            <div style={{ fontSize:13,color:C.subtle }}><strong style={{ color:C.white }}>{preview.length}</strong> productos para importar</div>
+            <div style={{ fontSize:13,color:C.subtle }}>
+              <strong style={{ color:C.white, fontSize:15 }}>{preview.length}</strong> productos listos para importar
+            </div>
             <div style={{ display:"flex",gap:8 }}>
               <button style={{ ...s.btn("ghost"),fontSize:12,padding:"6px 12px" }} onClick={agregarFila}><Plus size={12}/> Agregar fila</button>
               <button style={s.btn()} onClick={confirmar}><CheckCircle2 size={14}/> Confirmar {preview.filter(p=>p.nombre.trim()).length} productos</button>
             </div>
           </div>
-          <div style={{ overflowX:"auto",maxHeight:340,overflowY:"auto",border:`1px solid ${C.border}`,borderRadius:8 }}>
-            <table style={{ ...s.table,minWidth:800 }}>
+          <div style={{ overflowX:"auto",maxHeight:380,overflowY:"auto",border:`1px solid ${C.border}`,borderRadius:8 }}>
+            <table style={{ ...s.table,minWidth:860 }}>
               <thead style={{ position:"sticky",top:0,background:C.card,zIndex:1 }}>
-                <tr>{["SKU","Nombre *","Categoría","Costo","P. Venta","Stock","Mín",""].map(h=><th key={h} style={s.th}>{h}</th>)}</tr>
+                <tr>{["Foto","SKU","Nombre *","Categoría","Costo","P. Venta","Stock","Mín",""].map(h=><th key={h} style={s.th}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {preview.map(p=>(
                   <tr key={p._id} style={{ background: !p.nombre.trim() ? `${C.red}08` : "" }}>
-                    <td style={s.td}><input style={{ ...inputStyle,width:90 }} value={p.sku} onChange={e=>updateField(p._id,"sku",e.target.value)}/></td>
+                    <td style={{ ...s.td, width:44, textAlign:"center", padding:"4px 6px" }}>
+                      {p.foto ? (
+                        <img src={p.foto} alt="" style={{ width:32, height:32, objectFit:"cover", borderRadius:4, border:`1px solid ${C.border}`, display:"block", margin:"0 auto" }} onError={e=>e.target.style.display='none'}/>
+                      ) : (
+                        <ImageIcon size={18} color={C.muted} style={{ opacity:0.3, display:"block", margin:"0 auto" }}/>
+                      )}
+                    </td>
+                    <td style={s.td}><input style={{ ...inputStyle,width:85 }} value={p.sku} onChange={e=>updateField(p._id,"sku",e.target.value)}/></td>
                     <td style={s.td}><input style={{ ...inputStyle,width:200 }} value={p.nombre} onChange={e=>updateField(p._id,"nombre",e.target.value)} placeholder="Nombre del producto *"/></td>
                     <td style={s.td}>
-                      <select style={{ ...inputStyle,width:130 }} value={p.cat} onChange={e=>updateField(p._id,"cat",e.target.value)}>
+                      <select style={{ ...inputStyle,width:120 }} value={p.cat} onChange={e=>updateField(p._id,"cat",e.target.value)}>
                         {allCats.map(c=><option key={c} value={c}>{c}</option>)}
                       </select>
                     </td>
-                    <td style={s.td}><input style={{ ...inputStyle,width:80 }} type="number" value={p.costo} onChange={e=>updateField(p._id,"costo",e.target.value)}/></td>
-                    <td style={s.td}><input style={{ ...inputStyle,width:80 }} type="number" value={p.venta} onChange={e=>updateField(p._id,"venta",e.target.value)}/></td>
-                    <td style={s.td}><input style={{ ...inputStyle,width:60 }} type="number" value={p.stock} onChange={e=>updateField(p._id,"stock",e.target.value)}/></td>
-                    <td style={s.td}><input style={{ ...inputStyle,width:55 }} type="number" value={p.minStock} onChange={e=>updateField(p._id,"minStock",e.target.value)}/></td>
+                    <td style={s.td}><input style={{ ...inputStyle,width:75 }} type="number" value={p.costo} onChange={e=>{
+                      const nCosto = Number(e.target.value)||0
+                      const nVenta = nCosto > 0 ? Math.round(nCosto * (1 + (margenGanancia||50)/100)) : p.venta
+                      setPreview(prev=>prev.map(x=>x._id===p._id ? {...x, costo:nCosto, venta:nVenta} : x))
+                    }}/></td>
+                    <td style={s.td}><input style={{ ...inputStyle,width:75 }} type="number" value={p.venta} onChange={e=>updateField(p._id,"venta",e.target.value)}/></td>
+                    <td style={s.td}><input style={{ ...inputStyle,width:55 }} type="number" value={p.stock} onChange={e=>updateField(p._id,"stock",e.target.value)}/></td>
+                    <td style={s.td}><input style={{ ...inputStyle,width:50 }} type="number" value={p.minStock} onChange={e=>updateField(p._id,"minStock",e.target.value)}/></td>
                     <td style={s.td}><button onClick={()=>removeRow(p._id)} style={{ background:"none",border:"none",color:C.red,cursor:"pointer",opacity:0.6 }}><Trash2 size={13}/></button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div style={{ display:"flex",justifyContent:"flex-end",marginTop:12 }}>
+          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:12 }}>
+            <div style={{ fontSize:12, color:C.muted }}>
+              💡 El stock inicia en 0 para listas de precios de catálogo.
+            </div>
             <button style={s.btn()} onClick={confirmar}><CheckCircle2 size={14}/> Confirmar — importar {preview.filter(p=>p.nombre.trim()).length} productos</button>
           </div>
         </div>

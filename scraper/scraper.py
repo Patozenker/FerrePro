@@ -4,10 +4,12 @@
 ===============================================================================
   FERREPRO - SCRAPER UNIVERSAL DE PRODUCTOS (STANDALONE + SCROLL INFINITO)
 ===============================================================================
-Extrae productos, precios, fotos, categorías y códigos desde cualquier tienda web:
-- Modo Estándar: Tiendas con paginación tradicional (Rápido / Requests).
-- Modo Dinámico: Tiendas con Scroll Infinito o JavaScript (Playwright / Headless).
-Genera un archivo CSV / Excel listo para importar en FerrePro.
+Extrae catálogos completos para FerrePro con soporte de:
+- Extracción ultra-precisa de precios (ArgSeguridad, MercadoLibre, WooCommerce, Shopify, Magento, Tiendanube, VTEX, Prestashop, etc.)
+- Extracción de imágenes en alta resolución (lazy-load, srcset, zoom, data-src)
+- Stock en 0 (modo lista de precios de catálogo)
+- Precio de venta = Costo x (1 + Margen %)
+- Modo Estándar (Paginación) y Modo Scroll Infinito (JavaScript / Playwright)
 ===============================================================================
 """
 
@@ -39,7 +41,6 @@ except ImportError:
     print("    pip install requests beautifulsoup4 pandas openpyxl playwright")
     sys.exit(1)
 
-# Importar playwright opcionalmente
 PLAYWRIGHT_AVAILABLE = False
 try:
     from playwright.sync_api import sync_playwright
@@ -53,38 +54,30 @@ DEFAULT_HEADERS = {
     "Accept-Language": "es-419,es;q=0.9,en;q=0.8",
 }
 
-def limpiar_precio(raw):
-    """Convierte texto de precio crudo ($ 12.345,67 o USD 150) a float limpio."""
-    if raw is None:
-        return 0.0
-    s = str(raw).strip()
+def limpiar_num(s):
     if not s:
         return 0.0
-    
-    s = re.sub(r'[^\d.,]', '', s)
+    s = re.sub(r"[^\d.,]", "", str(s).strip())
     if not s:
         return 0.0
-
     if "," in s and "." in s:
         if s.rfind(",") > s.rfind("."):
             s = s.replace(".", "").replace(",", ".")
         else:
             s = s.replace(",", "")
     elif "," in s:
-        partes = s.split(",")
-        if len(partes) == 2 and len(partes[1]) <= 2:
+        p = s.split(",")
+        if len(p) == 2 and len(p[1]) <= 2:
             s = s.replace(",", ".")
         else:
             s = s.replace(",", "")
     elif "." in s:
-        partes = s.split(".")
-        if len(partes) == 2 and len(partes[1]) == 3:
+        p = s.split(".")
+        if len(p) == 2 and len(p[1]) == 3:
             s = s.replace(".", "")
-
     try:
-        val = float(s)
-        return round(val, 2)
-    except ValueError:
+        return round(float(s), 2)
+    except:
         return 0.0
 
 def detectar_moneda(texto_crudo):
@@ -92,6 +85,103 @@ def detectar_moneda(texto_crudo):
     if "USD" in t or "U$S" in t or "US$" in t or "DÓLAR" in t or "DOLAR" in t:
         return "USD"
     return "ARS"
+
+def extraer_precio_completo(item_soup):
+    """
+    Motor multi-capa para extraer el precio real de un producto en cualquier plataforma,
+    evitando la concatenación errónea de monedas dobles (ej: ARS y USD).
+    """
+    soup = BeautifulSoup(str(item_soup), "html.parser")
+
+    # 1. Atributos semánticos directos con content numérico (ej: content="51836.4")
+    for attr in ["itemprop", "data-price", "data-product-price", "data-price-amount"]:
+        tag = soup.find(attrs={attr: True})
+        if tag:
+            v = tag.get("content") or tag.get(attr)
+            if v:
+                p = limpiar_num(v)
+                if p > 0:
+                    return p, "ARS"
+
+    # 2. Descartar precios anteriores / tachados
+    for old_tag in soup.find_all(["del", "s"], class_=lambda c: c and any(k in str(c).lower() for k in ["old", "before", "was", "previous", "tachado", "strike"])):
+        old_tag.decompose()
+    for prev in soup.find_all(class_=lambda c: c and any(k in str(c).lower() for k in ["andes-money-amount--previous", "old-price", "was-price", "precio-anterior"])):
+        prev.decompose()
+
+    # 3. MercadoLibre (fracción + centavos)
+    ml_frac = soup.find(class_=lambda c: c and "andes-money-amount__fraction" in str(c))
+    if ml_frac:
+        ml_cents = soup.find(class_=lambda c: c and "andes-money-amount__cents" in str(c))
+        cents_str = f".{ml_cents.text.strip()}" if ml_cents else ""
+        raw_ml = f"{ml_frac.text.strip()}{cents_str}"
+        p = limpiar_num(raw_ml)
+        if p > 0:
+            return p, "ARS"
+
+    # 4. Descomponer strings individuales para evitar concatenar precios múltiples
+    textos = list(soup.stripped_strings)
+    texto_limpio = " ".join(textos)
+
+    # 5. Buscar ARS primero (ej: "ARS 51.836,40" o "$ 15.400")
+    m_ars = re.search(r"(?:ARS|\$)\s*([\d\.,]+)", texto_limpio, re.IGNORECASE)
+    if m_ars:
+        p = limpiar_num(m_ars.group(1))
+        if p > 0:
+            return p, "ARS"
+
+    # 6. Buscar USD
+    m_usd = re.search(r"(?:USD|U\$S|US\$)\s*([\d\.,]+)", texto_limpio, re.IGNORECASE)
+    if m_usd:
+        p = limpiar_num(m_usd.group(1))
+        if p > 0:
+            return p, "USD"
+
+    # 7. Fallback a primer número en tag con clase de precio
+    price_tag = soup.find(class_=lambda c: c and any(k in str(c).lower() for k in [
+        "special-price", "current-price", "price-item", "product-price", "item-price", "price", "precio"
+    ]))
+    if price_tag:
+        for string_part in price_tag.stripped_strings:
+            p = limpiar_num(string_part)
+            if p > 0:
+                return p, "ARS"
+
+    return 0.0, "ARS"
+
+def extraer_foto_completa(item_soup, domain, url_base):
+    """Extrae la URL de imagen en alta resolución probando lazy-loading y srcset."""
+    img_tag = item_soup.find('img')
+    foto_url = ""
+    if img_tag:
+        foto_url = (
+            img_tag.get('data-zoom-image') or
+            img_tag.get('data-src') or
+            img_tag.get('data-lazy-src') or
+            img_tag.get('data-original') or
+            img_tag.get('data-hi-res-src') or
+            img_tag.get('src') or ""
+        )
+        if (not foto_url or 'placeholder' in foto_url.lower() or 'data:image' in foto_url) and img_tag.get('srcset'):
+            partes = [p.strip().split(' ')[0] for p in img_tag.get('srcset').split(',') if p.strip()]
+            if partes:
+                foto_url = partes[-1]
+
+    if not foto_url:
+        bg_match = re.search(r'background(?:-image)?:\s*url\([\'"]?([^\'")]+)[\'"]?\)', str(item_soup))
+        if bg_match:
+            foto_url = bg_match.group(1)
+
+    if not foto_url:
+        return ""
+
+    if foto_url.startswith('//'):
+        return 'https:' + foto_url
+    elif foto_url.startswith('/'):
+        return domain + foto_url
+    elif not foto_url.startswith('http'):
+        return urllib.parse.urljoin(url_base, foto_url)
+    return foto_url
 
 def extraer_json_ld(soup, url_base):
     productos = []
@@ -118,11 +208,11 @@ def extraer_json_ld(soup, url_base):
                 nombre = item.get('name') or ''
                 if not nombre:
                     continue
-                
+
                 sku = item.get('sku') or item.get('mpn') or item.get('productID') or ''
                 desc = item.get('description') or ''
                 cat = item.get('category') or ''
-                
+
                 img = item.get('image')
                 foto_url = ""
                 if isinstance(img, str):
@@ -136,10 +226,10 @@ def extraer_json_ld(soup, url_base):
                 precio = 0.0
                 moneda = "ARS"
                 if isinstance(offers, dict):
-                    precio = limpiar_precio(offers.get('price') or offers.get('lowPrice'))
+                    precio = limpiar_num(offers.get('price') or offers.get('lowPrice'))
                     moneda = offers.get('priceCurrency') or "ARS"
                 elif isinstance(offers, list) and len(offers) > 0:
-                    precio = limpiar_precio(offers[0].get('price') or offers[0].get('lowPrice'))
+                    precio = limpiar_num(offers[0].get('price') or offers[0].get('lowPrice'))
                     moneda = offers[0].get('priceCurrency') or "ARS"
 
                 enlace = item.get('url') or url_base
@@ -161,32 +251,32 @@ def extraer_json_ld(soup, url_base):
 def extraer_html_cards(soup, url_base):
     productos = []
     domain = "/".join(url_base.split("/")[:3])
-    
+
     rubro = "General"
-    cat_tag = soup.find(['h1', 'h2'], class_=lambda c: c and any(k in c.lower() for k in ['title', 'category', 'heading', 'page-title'])) or soup.find('h1')
+    cat_tag = soup.find(['h1', 'h2'], class_=lambda c: c and any(k in str(c).lower() for k in ['title', 'category', 'heading', 'page-title'])) or soup.find('h1')
     if cat_tag and cat_tag.text.strip():
         rubro = cat_tag.text.strip()
     else:
-        breadcrumbs = soup.find_all(['li', 'span', 'a'], class_=lambda c: c and 'breadcrumb' in c.lower())
+        breadcrumbs = soup.find_all(['li', 'span', 'a'], class_=lambda c: c and 'breadcrumb' in str(c).lower())
         rutas = [b.text.replace('>', '').strip() for b in breadcrumbs if b.text.strip() and b.text.strip().lower() not in ['inicio', 'home']]
         if rutas:
             rubro = rutas[-1]
 
-    items = soup.find_all(['li', 'article', 'div'], class_=lambda c: c and any(k in c.lower() for k in [
+    items = soup.find_all(['li', 'article', 'div'], class_=lambda c: c and any(k in str(c).lower() for k in [
         'product-item', 'product-card', 'product-miniature', 'product-container',
         'js-item-product', 'ui-search-layout__item', 'poly-card', 'vtex-product-summary', 'item-product'
     ]))
 
     if not items or len(items) < 2:
-        items = soup.find_all('article') or soup.find_all('li', class_=lambda c: c and 'col' in c.lower()) or soup.find_all('div', class_=lambda c: c and 'product' in c.lower() and 'grid' not in c.lower())
+        items = soup.find_all('article') or soup.find_all('li', class_=lambda c: c and 'col' in str(c).lower()) or soup.find_all('div', class_=lambda c: c and 'product' in str(c).lower() and 'grid' not in str(c).lower())
 
     for idx, item in enumerate(items):
         try:
             titulo = ""
-            title_tag = item.find(['h2', 'h3', 'h4', 'strong', 'a'], class_=lambda c: c and any(k in c.lower() for k in ['name', 'title', 'product-name', 'poly-component__title', 'item-name']))
+            title_tag = item.find(['h2', 'h3', 'h4', 'strong', 'a'], class_=lambda c: c and any(k in str(c).lower() for k in ['name', 'title', 'product-name', 'poly-component__title', 'item-name']))
             if title_tag:
                 titulo = title_tag.text.strip()
-            
+
             if not titulo:
                 link_tag = item.find('a', title=True) or item.find('a')
                 if link_tag and link_tag.get('title'):
@@ -203,43 +293,17 @@ def extraer_html_cards(soup, url_base):
                 continue
 
             codigo = ""
-            ref_tag = item.find(['span', 'div', 'p', 'small'], class_=lambda c: c and any(k in c.lower() for k in ['sku', 'code', 'ref', 'reference', 'articulo']))
+            ref_tag = item.find(['span', 'div', 'p', 'small'], class_=lambda c: c and any(k in str(c).lower() for k in ['sku', 'code', 'ref', 'reference', 'articulo']))
             if ref_tag:
                 codigo = re.sub(r'^(sku|cód|cod|ref|articulo)[:\.\s]*', '', ref_tag.text, flags=re.IGNORECASE).strip()
-            
+
             if not codigo:
                 codigo_match = re.search(r'\b(?:SKU|CÓD|COD|REF|ART)[:\.\s]*([A-Z0-9\-_]+)\b', item.text, re.IGNORECASE)
                 if codigo_match:
                     codigo = codigo_match.group(1).strip()
 
-            precio_crudo = ""
-            price_box = item.find(['div', 'span', 'p'], class_=lambda c: c and any(k in c.lower() for k in ['price', 'precio', 'poly-price', 'current-price', 'special-price', 'price_color', 'item-price']))
-            if price_box:
-                precio_crudo = price_box.text.strip()
-            else:
-                price_match = re.search(r'(?:USD|\$|U\$S|ARS|£|€)\s*[\d.,]+', item.text)
-                if price_match:
-                    precio_crudo = price_match.group(0)
-
-            costo = limpiar_precio(precio_crudo)
-            moneda = detectar_moneda(precio_crudo)
-
-            foto_url = ""
-            img_tag = item.find('img')
-            if img_tag:
-                foto_url = (img_tag.get('data-src') or 
-                            img_tag.get('data-lazy-src') or 
-                            img_tag.get('data-original') or 
-                            img_tag.get('src') or "")
-                if img_tag.get('srcset') and not foto_url:
-                    foto_url = img_tag.get('srcset').split(',')[0].split(' ')[0]
-
-            if foto_url.startswith('//'):
-                foto_url = 'https:' + foto_url
-            elif foto_url.startswith('/'):
-                foto_url = domain + foto_url
-            elif foto_url and not foto_url.startswith('http'):
-                foto_url = urllib.parse.urljoin(url_base, foto_url)
+            costo, moneda = extraer_precio_completo(item)
+            foto_url = extraer_foto_completa(item, domain, url_base)
 
             enlace = ""
             a_tag = item.find('a', href=True)
@@ -268,11 +332,7 @@ def extraer_html_cards(soup, url_base):
 # =============================================================================
 # MODO DINÁMICO: SCROLL INFINITO CON PLAYWRIGHT
 # =============================================================================
-def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="Distribuidor Web", margen_ganancia=50.0, callback_log=None):
-    """
-    Navega en un navegador headless real, hace scroll continuo hacia abajo,
-    espera que carguen nuevos productos dinámicos y extrae todo el catálogo.
-    """
+def scrapear_scroll_infinito(url, max_scrolls=20, scroll_delay=1.5, proveedor="Distribuidor Web", margen_ganancia=50.0, callback_log=None):
     def log(msg):
         if callback_log:
             callback_log(msg)
@@ -283,22 +343,20 @@ def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="D
         log("[-] Playwright no está disponible. Usando modo estático...")
         return scrapear_url(url, max_paginas=5, proveedor=proveedor, margen_ganancia=margen_ganancia)
 
-    log(f"\n[+] Iniciando extracción con SCROLL INFINITO en navegador real: {url}")
-    log(f"[*] Configuración: Máx. scrolls: {max_scrolls} | Pausa: {scroll_delay}s | Proveedor: {proveedor}")
+    log(f"\n[+] Iniciando extracción con SCROLL INFINITO: {url}")
+    log(f"[*] Configuración: Máx. scrolls: {max_scrolls} | Margen: {margen_ganancia}% | Proveedor: {proveedor}")
 
     todos_productos = []
     vistos = set()
 
     with sync_playwright() as p:
         try:
-            # Intentar lanzar Chromium o Edge
             try:
                 browser = p.chromium.launch(headless=True)
             except Exception:
                 browser = p.chromium.launch(channel="msedge", headless=True)
         except Exception as e:
-            log(f"[-] No se pudo iniciar el navegador: {e}")
-            log("[*] Pasando a modo estático...")
+            log(f"[-] Error iniciando navegador: {e}. Usando modo estático...")
             return scrapear_url(url, max_paginas=5, proveedor=proveedor, margen_ganancia=margen_ganancia)
 
         context = browser.new_context(
@@ -308,15 +366,14 @@ def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="D
         page = context.new_page()
 
         try:
-            log("[*] Cargando página...")
+            log("[*] Conectando y cargando página...")
             page.goto(url, wait_until="domcontentloaded", timeout=45000)
-            page.wait_for_timeout(2000)
+            page.wait_for_timeout(2500)
         except Exception as err:
-            log(f"[-] Error al cargar URL: {err}")
+            log(f"[-] Error al conectar: {err}")
             browser.close()
             return []
 
-        # Bucle de scroll infinito
         last_height = page.evaluate("document.body.scrollHeight")
         scroll_count = 0
         sin_cambios = 0
@@ -325,7 +382,6 @@ def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="D
             scroll_count += 1
             log(f"[*] Scroll [{scroll_count}/{max_scrolls}] - Desplazando hacia abajo...")
 
-            # Scroll suave para disparar listeners de JavaScript
             page.evaluate("""
                 window.scrollBy({
                     top: window.innerHeight * 1.8,
@@ -335,7 +391,6 @@ def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="D
             """)
             page.wait_for_timeout(int(scroll_delay * 1000))
 
-            # Extraer el HTML actual renderizado
             html_actual = page.content()
             soup = BeautifulSoup(html_actual, 'html.parser')
 
@@ -347,20 +402,20 @@ def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="D
 
             nuevos_en_este_scroll = 0
             for prod in candidatos:
-                clave = (prod['nombre'].lower().strip(), prod['costo'])
+                clave = prod['nombre'].lower().strip()
                 if clave not in vistos and len(prod['nombre']) > 2:
                     vistos.add(clave)
                     todos_productos.append(prod)
                     nuevos_en_este_scroll += 1
 
-            log(f"   -> Total acumulado: {len(todos_productos)} productos (+{nuevos_en_este_scroll} en este scroll)")
+            con_precio = sum(1 for x in todos_productos if x['costo'] > 0)
+            log(f"   -> Total acumulado: {len(todos_productos)} productos ({con_precio} con precio detectado)")
 
-            # Verificar si llegamos al final absoluto de la página
             new_height = page.evaluate("document.body.scrollHeight")
             if new_height == last_height and nuevos_en_este_scroll == 0:
                 sin_cambios += 1
                 if sin_cambios >= 3:
-                    log("[*] Se alcanzó el final de la página (no hay más contenido).")
+                    log("[*] Fin de catálogo alcanzado.")
                     break
             else:
                 sin_cambios = 0
@@ -368,7 +423,6 @@ def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="D
 
         browser.close()
 
-    # Formatear al estándar FerrePro
     formateados = []
     for i, p in enumerate(todos_productos, start=1):
         costo = p['costo']
@@ -381,7 +435,7 @@ def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="D
             "categoria": p['categoria'] if p['categoria'] else "Herramientas",
             "costo": costo,
             "venta": venta,
-            "stock": 10,
+            "stock": 0,       # Stock en 0 por defecto para listas de precios
             "minStock": 3,
             "foto": p['foto'],
             "descripcion": p['descripcion'],
@@ -435,7 +489,7 @@ def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", marge
 
         agregados_pag = 0
         for p in candidatos:
-            clave = (p['nombre'].lower().strip(), p['costo'])
+            clave = p['nombre'].lower().strip()
             if clave not in vistos and len(p['nombre']) > 2:
                 vistos.add(clave)
                 todos_productos.append(p)
@@ -447,7 +501,7 @@ def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", marge
             break
 
         next_btn = (soup.find('a', rel='next') or
-                    soup.find('a', class_=lambda c: c and any(k in c.lower() for k in ['next', 'siguiente', 'pagination__next'])) or
+                    soup.find('a', class_=lambda c: c and any(k in str(c).lower() for k in ['next', 'siguiente', 'pagination__next'])) or
                     soup.find('a', title=lambda t: t and 'siguiente' in t.lower()))
 
         if next_btn and next_btn.get('href'):
@@ -481,7 +535,7 @@ def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", marge
             "categoria": p['categoria'] if p['categoria'] else "Herramientas",
             "costo": costo,
             "venta": venta,
-            "stock": 10,
+            "stock": 0,       # Stock en 0 por defecto para listas de precios
             "minStock": 3,
             "foto": p['foto'],
             "descripcion": p['descripcion'],
@@ -506,7 +560,6 @@ def exportar_archivos(productos, ruta_salida_base="productos_ferrepro"):
     ]
     df_clean = df[[c for c in columnas if c in df.columns]]
 
-    # Asegurar que el directorio padre exista
     out_file = Path(ruta_salida_base).resolve()
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -536,8 +589,8 @@ def main():
     parser = argparse.ArgumentParser(description="FerrePro Scraper Universal (Standalone + Scroll Infinito)")
     parser.add_argument("--url", help="URL del catálogo o categoría a scrapear")
     parser.add_argument("--scroll", action="store_true", help="Activar modo Scroll Infinito (Playwright / Headless)")
-    parser.add_argument("--scrolls", type=int, default=15, help="Cantidad de scrolls hacia abajo en modo dinámico (default: 15)")
-    parser.add_argument("--pages", type=int, default=3, help="Cantidad máxima de páginas en modo estático (default: 3)")
+    parser.add_argument("--scrolls", type=int, default=20, help="Cantidad de scrolls hacia abajo en modo dinámico (default: 20)")
+    parser.add_argument("--pages", type=int, default=5, help="Cantidad máxima de páginas en modo estático (default: 5)")
     parser.add_argument("--margin", type=float, default=50.0, help="Margen de ganancia %% para calcular precio de venta (default: 50)")
     parser.add_argument("--prov", default="Distribuidor Web", help="Nombre del proveedor asignado")
     parser.add_argument("--output", default="productos_ferrepro", help="Nombre base del archivo de salida (sin extensión)")
@@ -560,19 +613,19 @@ def main():
         scroll_mode = scroll_choice in ['s', 'si', 'y', 'yes', 'true', '1']
 
         if scroll_mode:
-            scrolls_input = input("¿Cuántos scrolls hacia abajo hacer? (Enter para 15): ").strip()
-            scrolls_count = int(scrolls_input) if scrolls_input.isdigit() else 15
+            scrolls_input = input("¿Cuántos scrolls hacia abajo hacer? (Enter para 20): ").strip()
+            scrolls_count = int(scrolls_input) if scrolls_input.isdigit() else 20
         else:
-            pages_input = input("¿Cuántas páginas querés recorrer? (Enter para 3): ").strip()
-            pages_count = int(pages_input) if pages_input.isdigit() else 3
+            pages_input = input("¿Cuántas páginas querés recorrer? (Enter para 5): ").strip()
+            pages_count = int(pages_input) if pages_input.isdigit() else 5
 
         margin_input = input("Margen de ganancia % sugerido (Enter para 50%): ").strip()
         margin = float(margin_input) if margin_input.replace('.', '').isdigit() else 50.0
 
         prov_input = input("Nombre del proveedor (Enter para 'Distribuidor Web'): ").strip()
         prov = prov_input if prov_input else "Distribuidor Web"
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output = f"productos_{timestamp}"
     else:
         scrolls_count = args.scrolls
@@ -588,11 +641,10 @@ def main():
         prods = scrapear_scroll_infinito(url, max_scrolls=scrolls_count, proveedor=prov, margen_ganancia=margin)
     else:
         prods = scrapear_url(url, max_paginas=pages_count, proveedor=prov, margen_ganancia=margin)
-        # Si el modo estático no encontró nada, ofrecer probar scroll infinito
         if len(prods) == 0 and PLAYWRIGHT_AVAILABLE:
             print("\n[!] No se detectaron productos con paginación tradicional.")
             print("[*] Reintentando automáticamente con modo Scroll Infinito (JavaScript)...")
-            prods = scrapear_scroll_infinito(url, max_scrolls=12, proveedor=prov, margen_ganancia=margin)
+            prods = scrapear_scroll_infinito(url, max_scrolls=15, proveedor=prov, margen_ganancia=margin)
 
     exportar_archivos(prods, ruta_salida_base=output)
 

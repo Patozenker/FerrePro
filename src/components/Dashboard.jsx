@@ -178,7 +178,19 @@ export default function Dashboard({ productos, ventas, clientes, pedidos=[], pag
     })).filter(x => x.v > 0)
   }, [catPeriod, ventas, productos, allCats])
 
-  const tt = { contentStyle:{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,fontSize:12,color:C.text}, formatter:v=>[fmt(v)] }
+  const tt = {
+    contentStyle: {
+      background: C.card,
+      border: `1px solid ${C.border}`,
+      borderRadius: 8,
+      fontSize: 12,
+      color: C.text,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+    },
+    itemStyle: { color: C.text, fontSize: 12 },
+    labelStyle: { color: C.white, fontWeight: 700, marginBottom: 4 },
+    formatter: v => [fmt(v)]
+  }
 
   return (
     <div>

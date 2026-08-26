@@ -23,6 +23,7 @@ export default function Login({ onLogin }) {
 
       // Usuarios base + usuario personalizado
       const USUARIOS = [
+        { user: 'pato', pass: 'Pato1234', nombre: 'Pato', rol: 'admin' },
         { user: 'admin', pass: 'admin', nombre: 'Administrador', rol: 'admin' },
         { user: 'vendedor', pass: 'vendedor', nombre: 'Vendedor', rol: 'vendedor' },
       ]
@@ -110,8 +111,8 @@ export default function Login({ onLogin }) {
         </form>
 
         <div style={{ marginTop: 24, padding: '12px 14px', background: '#161c2e', borderRadius: 8, fontSize: 11, color: '#4a5568' }}>
-          <div style={{ fontWeight: 600, marginBottom: 4, color: '#8896a7' }}>Credenciales de prueba:</div>
-          <div>Admin: <span style={{ color: '#f97316' }}>admin / admin</span></div>
+          <div style={{ fontWeight: 600, marginBottom: 4, color: '#8896a7' }}>Credenciales de acceso:</div>
+          <div>Admin: <span style={{ color: '#f97316' }}>Pato / Pato1234</span></div>
           <div>Vendedor: <span style={{ color: '#f97316' }}>vendedor / vendedor</span></div>
         </div>
       </div>

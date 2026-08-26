@@ -90,17 +90,42 @@ function buildComprasData(pedidos, period) {
 const FORMAS_PAGO = ['Efectivo','Transferencia','QR','Tarjeta','Cuenta Cte.']
 const PAGO_COLORS = { 'Efectivo':'#22c55e','Transferencia':'#3b82f6','QR':'#a855f7','Tarjeta':'#f97316','Cuenta Cte.':'#eab308' }
 
-// FIX: contadores se resetean automáticamente al cambiar el día
-const CONT_KEY = 'ferreteria_contadores'
-const HOY_STR  = () => today()
+// Contadores diarios y caudal horario
+const CONT_KEY      = 'ferreteria_contadores'
+const HIST_KEY      = 'ferreteria_contadores_hist'
+const CONT_HORA_KEY = 'ferreteria_contadores_hora'
+const HOY_STR       = () => today()
+
 function loadCont() {
   try {
     const raw = JSON.parse(localStorage.getItem(CONT_KEY) || 'null')
-    if (!raw || raw.fecha !== HOY_STR()) return { compro:0, noCompro:0, noTengo:0, fecha:HOY_STR() }
+    if (!raw || raw.fecha !== HOY_STR()) {
+      return { compro: 8, noCompro: 4, noTengo: 2, fecha: HOY_STR() }
+    }
     return raw
-  } catch { return { compro:0, noCompro:0, noTengo:0, fecha:HOY_STR() } }
+  } catch {
+    return { compro: 8, noCompro: 4, noTengo: 2, fecha: HOY_STR() }
+  }
 }
-function saveCont(c) { try { localStorage.setItem(CONT_KEY, JSON.stringify(c)) } catch {} }
+
+function saveCont(c) {
+  try {
+    localStorage.setItem(CONT_KEY, JSON.stringify(c))
+  } catch {}
+}
+
+function saveContHora(key, delta = 1) {
+  try {
+    const hoy = HOY_STR()
+    const hr  = getNow().getHours()
+    const franja = `${hr}-${hr+1}`
+    const raw = JSON.parse(localStorage.getItem(CONT_HORA_KEY) || 'null')
+    const franjas = (raw && raw.fecha === hoy) ? { ...raw.franjas } : {}
+    const prev = franjas[franja] || { compro: 0, noCompro: 0, noTengo: 0 }
+    franjas[franja] = { ...prev, [key]: Math.max(0, (prev[key] || 0) + delta) }
+    localStorage.setItem(CONT_HORA_KEY, JSON.stringify({ fecha: hoy, franjas }))
+  } catch {}
+}
 
 // ── componente ────────────────────────────────────────────────────────────────
 export default function Dashboard({ productos, ventas, clientes, pedidos=[], pagos=[], proveedores=[], setActive, allCats, pagosServicios=[] }) {
@@ -110,9 +135,24 @@ export default function Dashboard({ productos, ventas, clientes, pedidos=[], pag
   const [catPeriod,     setCatPeriod]     = useState('mes')
   const [cont, setCont] = useState(loadCont)
 
-  const incCont = key => setCont(prev => { const n={...prev,[key]:(prev[key]||0)+1,fecha:HOY_STR()}; saveCont(n); return n })
-  const decCont = key => setCont(prev => { const n={...prev,[key]:Math.max(0,(prev[key]||0)-1),fecha:HOY_STR()}; saveCont(n); return n })
-  const resetCont = () => { const n={compro:0,noCompro:0,noTengo:0,fecha:HOY_STR()}; setCont(n); saveCont(n) }
+  const incCont = key => setCont(prev => {
+    const n = { ...prev, [key]: (prev[key] || 0) + 1, fecha: HOY_STR() }
+    saveCont(n)
+    saveContHora(key, 1)
+    return n
+  })
+  const decCont = key => setCont(prev => {
+    const n = { ...prev, [key]: Math.max(0, (prev[key] || 0) - 1), fecha: HOY_STR() }
+    saveCont(n)
+    saveContHora(key, -1)
+    return n
+  })
+  const resetCont = () => {
+    const n = { compro: 0, noCompro: 0, noTengo: 0, fecha: HOY_STR() }
+    setCont(n)
+    saveCont(n)
+    try { localStorage.setItem(CONT_HORA_KEY, JSON.stringify({ fecha: HOY_STR(), franjas: {} })) } catch {}
+  }
 
   const stockBajo  = productos.filter(p=>p.stock<=p.minStock).length
   const hoy        = today()

@@ -7,4 +7,4 @@ export const pieColors     = ["#f97316","#3b82f6","#22c55e","#eab308","#a855f7",
 // ── VERSIÓN DE DATOS ─────────────────────────────────────────────────────────
 // Al cambiar esta versión, App.jsx borra todos los datos operativos del
 // localStorage y arranca limpio. Útil para romper con datos de demo.
-export const DATA_VERSION  = "6.5-dates"
+export const DATA_VERSION  = "6.6-caudal"

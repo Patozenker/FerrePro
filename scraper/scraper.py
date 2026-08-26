@@ -402,10 +402,11 @@ def descubrir_categorias(url_base, callback_log=None):
     links = {}
     descartar = [
         'contacto', 'nosotros', 'empresa', 'sucursal', 'sucursales', 'login', 'iniciar-sesion',
-        'cart', 'carrito', 'checkout', 'terminos', 'politica', 'privacidad', 'cuenta', 'mi-cuenta',
+        'cart', 'carrito', 'checkout', 'terminos', 'politica', 'politicas', 'privacidad', 'cuenta', 'mi-cuenta',
         'ayuda', 'blog', 'faq', 'cursos', 'marcas', 'module', 'quote', 'wishlist', 'favoritos',
         'seguimiento', 'arrepentimiento', 'devolucion', 'preguntas', 'instrucciones', 'whatsapp', 'tel:',
-        'medios-de-pago', 'entrega-a-domicilio', 'novedades', 'preguntas-frecuentes', 'customer', 'decorador'
+        'medios-de-pago', 'entrega-a-domicilio', 'novedades', 'preguntas-frecuentes', 'customer', 'decorador',
+        '/content/', 'soporte', 'soporte-tecnico', 'legales', 'bases-y-condiciones'
     ]
 
     for a in soup.find_all('a', href=True):

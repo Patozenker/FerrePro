@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
-  FERREPRO - PANEL VISUAL DEL SCRAPER (GUI CON SCROLL INFINITO)
+  FERREPRO - PANEL VISUAL DEL SCRAPER (GUI MULTI-CATEGORÍA + SCROLL INFINITO)
 ===============================================================================
-Interfaz gráfica moderna para extraer productos con paginación tradicional
-o scroll infinito / JavaScript en 1 solo clic.
+Interfaz gráfica moderna para:
+1. Extraer una categoría individual.
+2. Rastrear automáticamente TODAS las carpetas/categorías del menú de un sitio.
+3. Generar un archivo CSV consolidado listo para FerrePro.
 ===============================================================================
 """
 
@@ -18,18 +20,32 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
 try:
-    from scraper import scrapear_url, scrapear_scroll_infinito, exportar_archivos, PLAYWRIGHT_AVAILABLE
+    from scraper import (
+        scrapear_url,
+        scrapear_scroll_infinito,
+        scrapear_sitio_completo,
+        descubrir_categorias,
+        exportar_archivos,
+        PLAYWRIGHT_AVAILABLE
+    )
 except ImportError:
     import sys
     sys.path.append(str(Path(__file__).parent))
-    from scraper import scrapear_url, scrapear_scroll_infinito, exportar_archivos, PLAYWRIGHT_AVAILABLE
+    from scraper import (
+        scrapear_url,
+        scrapear_scroll_infinito,
+        scrapear_sitio_completo,
+        descubrir_categorias,
+        exportar_archivos,
+        PLAYWRIGHT_AVAILABLE
+    )
 
 class ScraperGUI(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("FerrePro — Extractor de Productos Web")
-        self.geometry("680x640")
-        self.minsize(580, 540)
+        self.title("FerrePro — Extractor Universal Multi-Categoría")
+        self.geometry("720x680")
+        self.minsize(620, 580)
         self.configure(bg="#0f1320")
 
         self.last_csv = None
@@ -44,48 +60,58 @@ class ScraperGUI(tk.Tk):
         style.configure(".", background="#0f1320", foreground="#f8fafc", font=("Segoe UI", 10))
         style.configure("TLabel", background="#0f1320", foreground="#f8fafc")
         style.configure("TCheckbutton", background="#161c2e", foreground="#f8fafc", font=("Segoe UI", 10))
+        style.configure("TRadiobutton", background="#161c2e", foreground="#f8fafc", font=("Segoe UI", 10))
 
-        main_frame = tk.Frame(self, bg="#0f1320", padx=24, pady=20)
+        main_frame = tk.Frame(self, bg="#0f1320", padx=24, pady=18)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Encabezado
         header_frame = tk.Frame(main_frame, bg="#0f1320")
-        header_frame.pack(fill=tk.X, pady=(0, 16))
+        header_frame.pack(fill=tk.X, pady=(0, 14))
 
         tk.Label(header_frame, text="🔧 FerrePro Scraper Universal", font=("Segoe UI", 16, "bold"), bg="#0f1320", fg="#f97316").pack(anchor="w")
-        tk.Label(header_frame, text="Extraé productos desde cualquier tienda web (Paginación o Scroll Infinito) y generá un CSV listo para FerrePro", font=("Segoe UI", 9), bg="#0f1320", fg="#8896a7").pack(anchor="w", pady=(2, 0))
+        tk.Label(header_frame, text="Extraé categorías individuales o rastreá automáticamente TODO el menú de la tienda en 1 solo CSV", font=("Segoe UI", 9), bg="#0f1320", fg="#8896a7").pack(anchor="w", pady=(2, 0))
 
         # Tarjeta de configuración
-        card = tk.Frame(main_frame, bg="#161c2e", bd=1, relief="solid", padx=16, pady=16)
-        card.pack(fill=tk.X, pady=(0, 14))
+        card = tk.Frame(main_frame, bg="#161c2e", bd=1, relief="solid", padx=16, pady=14)
+        card.pack(fill=tk.X, pady=(0, 12))
 
         # 1. URL
-        tk.Label(card, text="URL del catálogo o categoría:", font=("Segoe UI", 10, "bold"), bg="#161c2e", fg="#e2e8f0").pack(anchor="w", pady=(0, 4))
+        tk.Label(card, text="URL del sitio web o categoría:", font=("Segoe UI", 10, "bold"), bg="#161c2e", fg="#e2e8f0").pack(anchor="w", pady=(0, 4))
         self.url_var = tk.StringVar(value="")
         url_entry = tk.Entry(card, textvariable=self.url_var, bg="#0f1320", fg="#f8fafc", insertbackground="#fff", bd=1, relief="solid", font=("Segoe UI", 10))
-        url_entry.pack(fill=tk.X, pady=(0, 12), ipady=4)
+        url_entry.pack(fill=tk.X, pady=(0, 10), ipady=4)
         url_entry.focus()
 
-        # Checkbox de Scroll Infinito
-        self.scroll_var = tk.BooleanVar(value=True)
-        cb_frame = tk.Frame(card, bg="#161c2e")
-        cb_frame.pack(fill=tk.X, pady=(0, 12))
-        
-        cb = tk.Checkbutton(cb_frame, text="⚡ Activar modo Scroll Infinito / Carga dinámica (JavaScript)", variable=self.scroll_var, bg="#161c2e", fg="#38bdf8", activebackground="#161c2e", activeforeground="#38bdf8", selectcolor="#0f1320", font=("Segoe UI", 10, "bold"), command=self.toggle_mode)
-        cb.pack(anchor="w")
+        # Opciones de Alcance (Categoría única vs Todo el sitio)
+        mode_box = tk.Frame(card, bg="#0c101c", bd=1, relief="solid", padx=10, pady=8)
+        mode_box.pack(fill=tk.X, pady=(0, 10))
 
-        # Grid de 3 opciones (Límite, Margen, Proveedor)
+        tk.Label(mode_box, text="Alcance de la extracción:", font=("Segoe UI", 9, "bold"), bg="#0c101c", fg="#f97316").pack(anchor="w", pady=(0, 4))
+
+        self.crawl_mode = tk.StringVar(value="all_site")
+        
+        rb1 = tk.Radiobutton(mode_box, text="🌐 Rastrear TODAS las categorías del menú del sitio (Catálogo Completo)", variable=self.crawl_mode, value="all_site", bg="#0c101c", fg="#38bdf8", activebackground="#0c101c", activeforeground="#38bdf8", selectcolor="#0f1320", font=("Segoe UI", 9, "bold"), command=self.toggle_mode)
+        rb1.pack(anchor="w", pady=(0, 2))
+
+        rb2 = tk.Radiobutton(mode_box, text="📂 Solo la categoría o página ingresada", variable=self.crawl_mode, value="single_url", bg="#0c101c", fg="#94a3b8", activebackground="#0c101c", activeforeground="#94a3b8", selectcolor="#0f1320", font=("Segoe UI", 9), command=self.toggle_mode)
+        rb2.pack(anchor="w")
+
+        # Botón auxiliar para descubrir categorías
+        btn_disc = tk.Button(mode_box, text="🔍 Ver categorías detectadas", font=("Segoe UI", 8, "bold"), bg="#1e293b", fg="#38bdf8", bd=1, relief="solid", cursor="hand2", padx=8, pady=3, command=self.preview_categories)
+        btn_disc.pack(anchor="e", pady=(4, 0))
+
+        # Grid de 3 opciones (Scrolls, Margen, Proveedor)
         opts_frame = tk.Frame(card, bg="#161c2e")
         opts_frame.pack(fill=tk.X)
 
-        # Límite (Scrolls o Páginas)
-        self.limit_frame = tk.Frame(opts_frame, bg="#161c2e")
-        self.limit_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
-        self.limit_label = tk.Label(self.limit_frame, text="Máx. Scrolls:", font=("Segoe UI", 9, "bold"), bg="#161c2e", fg="#8896a7")
-        self.limit_label.pack(anchor="w")
-        self.limit_var = tk.StringVar(value="15")
-        self.limit_spin = tk.Spinbox(self.limit_frame, from_=1, to=100, textvariable=self.limit_var, bg="#0f1320", fg="#f8fafc", bd=1, relief="solid", font=("Segoe UI", 10), width=6)
-        self.limit_spin.pack(fill=tk.X, pady=(3, 0), ipady=2)
+        # Límite Scrolls
+        self.scrolls_col = tk.Frame(opts_frame, bg="#161c2e")
+        self.scrolls_col.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+        self.scroll_label = tk.Label(self.scrolls_col, text="Scrolls por categoría:", font=("Segoe UI", 9, "bold"), bg="#161c2e", fg="#8896a7")
+        self.scroll_label.pack(anchor="w")
+        self.scrolls_var = tk.StringVar(value="10")
+        tk.Spinbox(self.scrolls_col, from_=1, to=100, textvariable=self.scrolls_var, bg="#0f1320", fg="#f8fafc", bd=1, relief="solid", font=("Segoe UI", 10), width=6).pack(fill=tk.X, pady=(3, 0), ipady=2)
 
         # Margen
         m_col = tk.Frame(opts_frame, bg="#161c2e")
@@ -102,14 +128,14 @@ class ScraperGUI(tk.Tk):
         tk.Entry(pr_col, textvariable=self.prov_var, bg="#0f1320", fg="#f8fafc", bd=1, relief="solid", font=("Segoe UI", 10)).pack(fill=tk.X, pady=(3, 0), ipady=2)
 
         # Botón de acción principal
-        self.btn_run = tk.Button(main_frame, text="🚀 INICIAR EXTRACCIÓN", font=("Segoe UI", 11, "bold"), bg="#f97316", fg="#ffffff", activebackground="#ea6c00", activeforeground="#ffffff", bd=0, cursor="hand2", padx=16, pady=10, command=self.start_scraping)
-        self.btn_run.pack(fill=tk.X, pady=(0, 14))
+        self.btn_run = tk.Button(main_frame, text="🚀 INICIAR EXTRACCIÓN CONSOLIDADA", font=("Segoe UI", 11, "bold"), bg="#f97316", fg="#ffffff", activebackground="#ea6c00", activeforeground="#ffffff", bd=0, cursor="hand2", padx=16, pady=10, command=self.start_scraping)
+        self.btn_run.pack(fill=tk.X, pady=(0, 12))
 
         # Consola / Log de salida
-        tk.Label(main_frame, text="Progreso en vivo:", font=("Segoe UI", 9, "bold"), bg="#0f1320", fg="#8896a7").pack(anchor="w", pady=(0, 4))
+        tk.Label(main_frame, text="Progreso y registro en vivo:", font=("Segoe UI", 9, "bold"), bg="#0f1320", fg="#8896a7").pack(anchor="w", pady=(0, 4))
         
         log_frame = tk.Frame(main_frame, bg="#080b12", bd=1, relief="solid")
-        log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 12))
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
         self.log_text = tk.Text(log_frame, bg="#080b12", fg="#38bdf8", insertbackground="#fff", bd=0, font=("Consolas", 9), wrap="word")
         self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=8, pady=8)
@@ -129,19 +155,46 @@ class ScraperGUI(tk.Tk):
         self.btn_open_folder.pack(side=tk.LEFT)
 
     def toggle_mode(self):
-        if self.scroll_var.get():
-            self.limit_label.config(text="Máx. Scrolls:")
-            if self.limit_var.get() in ["3", "5"]:
-                self.limit_var.set("15")
+        if self.crawl_mode.get() == "all_site":
+            self.scroll_label.config(text="Scrolls por categoría:")
+            self.scrolls_var.set("10")
         else:
-            self.limit_label.config(text="Máx. Páginas:")
-            if self.limit_var.get() in ["15", "20"]:
-                self.limit_var.set("3")
+            self.scroll_label.config(text="Scrolls en la página:")
+            self.scrolls_var.set("20")
 
     def log(self, msg):
         self.log_text.insert(tk.END, msg + "\n")
         self.log_text.see(tk.END)
         self.update_idletasks()
+
+    def preview_categories(self):
+        url = self.url_var.get().strip()
+        if not url:
+            messagebox.showwarning("Atención", "Ingresá primero la URL del sitio web.")
+            return
+
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = "https://" + url
+            self.url_var.set(url)
+
+        self.log(f"▶ Escaneando menú de: {url}...")
+        threading.Thread(target=self._run_preview_cats, args=(url,), daemon=True).start()
+
+    def _run_preview_cats(self, url):
+        try:
+            cats = descubrir_categorias(url, callback_log=self.log)
+            if not cats:
+                self.log("⚠️ No se encontraron categorías automáticas en el menú.")
+                messagebox.showinfo("Categorías", "No se detectaron menús desplegables. Podés ingresar la URL directa de la categoría.")
+            else:
+                self.log(f"📋 LISTA DE CATEGORÍAS DETECTADAS ({len(cats)}):")
+                for u, n in list(cats.items())[:20]:
+                    self.log(f"   • {n} -> {u}")
+                if len(cats) > 20:
+                    self.log(f"   ... y {len(cats) - 20} categorías más.")
+                messagebox.showinfo("Categorías Detectadas", f"¡Se encontraron {len(cats)} categorías en el menú del sitio!\n\nHacé clic en 'Iniciar Extracción Consolidada' para rastrearlas todas.")
+        except Exception as e:
+            self.log(f"❌ Error escaneando categorías: {e}")
 
     def start_scraping(self):
         url = self.url_var.get().strip()
@@ -154,9 +207,9 @@ class ScraperGUI(tk.Tk):
             self.url_var.set(url)
 
         try:
-            limit = int(self.limit_var.get())
+            scrolls = int(self.scrolls_var.get())
         except ValueError:
-            limit = 15 if self.scroll_var.get() else 3
+            scrolls = 10
 
         try:
             margin = float(self.margin_var.get().replace(',', '.'))
@@ -164,53 +217,49 @@ class ScraperGUI(tk.Tk):
             margin = 50.0
 
         prov = self.prov_var.get().strip() or "Distribuidor Web"
-        use_scroll = self.scroll_var.get()
+        crawl_all = (self.crawl_mode.get() == "all_site")
 
-        self.btn_run.config(state=tk.DISABLED, text="⏳ EXTRAYENDO PRODUCTOS...")
+        self.btn_run.config(state=tk.DISABLED, text="⏳ RASTREANDO Y EXTRAYENDO...")
         self.btn_open_csv.config(state=tk.DISABLED)
         self.log_text.delete("1.0", tk.END)
 
-        threading.Thread(target=self._run_thread, args=(url, limit, prov, margin, use_scroll), daemon=True).start()
+        threading.Thread(target=self._run_thread, args=(url, scrolls, prov, margin, crawl_all), daemon=True).start()
 
-    def _run_thread(self, url, limit, prov, margin, use_scroll):
-        mode_str = "Scroll Infinito (Playwright)" if use_scroll else "Paginación Tradicional"
-        self.log(f"▶ Modo: {mode_str}")
-        self.log(f"▶ Conectando a {url}...")
-        self.log(f"▶ Límite: {limit} | Margen: {margin}% | Proveedor: {prov}")
+    def _run_thread(self, url, scrolls, prov, margin, crawl_all):
+        self.log(f"▶ Modo: {'Catálogo Completo (Todas las Categorías)' if crawl_all else 'Categoría Única'}")
+        self.log(f"▶ URL: {url}")
+        self.log(f"▶ Margen: {margin}% | Proveedor: {prov}")
         self.log("-" * 55)
 
         try:
-            if use_scroll:
-                productos = scrapear_scroll_infinito(url, max_scrolls=limit, proveedor=prov, margen_ganancia=margin, callback_log=self.log)
+            if crawl_all:
+                productos = scrapear_sitio_completo(url, scrolls_por_cat=scrolls, proveedor=prov, margen_ganancia=margin, callback_log=self.log)
             else:
-                productos = scrapear_url(url, max_paginas=limit, proveedor=prov, margen_ganancia=margin, callback_log=self.log)
-                if len(productos) == 0 and PLAYWRIGHT_AVAILABLE:
-                    self.log("[!] No se detectaron productos estáticos. Reintentando con Scroll Infinito...")
-                    productos = scrapear_scroll_infinito(url, max_scrolls=12, proveedor=prov, margen_ganancia=margin, callback_log=self.log)
+                productos = scrapear_scroll_infinito(url, max_scrolls=scrolls, proveedor=prov, margen_ganancia=margin, callback_log=self.log)
 
             if not productos:
-                self.log("⚠️ No se encontraron productos en la URL provista.")
-                messagebox.showwarning("Sin resultados", "No se detectaron productos. Verificá si la página requiere inicio de sesión o tiene protección anti-bot.")
+                self.log("⚠️ No se encontraron productos.")
+                messagebox.showwarning("Sin resultados", "No se detectaron productos.")
             else:
                 base_dir = Path(__file__).resolve().parent
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_base = base_dir / f"productos_{timestamp}"
-                
+                output_base = base_dir / f"catalogo_{timestamp}"
+
                 csv_path, xlsx_path = exportar_archivos(productos, ruta_salida_base=str(output_base))
                 self.last_csv = csv_path
                 self.last_xlsx = xlsx_path
 
                 self.log("-" * 55)
-                self.log(f"🎉 ¡Extracción completada! Se guardaron {len(productos)} productos.")
+                self.log(f"🎉 ¡EXTRACCIÓN CONSOLIDADA FINALIZADA! Se guardaron {len(productos)} productos.")
                 self.log(f"📁 CSV listo: {csv_path}")
                 self.btn_open_csv.config(state=tk.NORMAL)
-                messagebox.showinfo("Éxito", f"¡Extracción exitosa!\n\nSe extrajeron {len(productos)} productos.\n\nYa podés importarlos en FerrePro.")
+                messagebox.showinfo("Éxito", f"¡Extracción exitosa!\n\nSe extrajeron {len(productos)} productos de todas las carpetas y se guardaron en CSV.\n\nYa podés importarlos a FerrePro.")
 
         except Exception as e:
             self.log(f"❌ Error durante la extracción: {e}")
             messagebox.showerror("Error", f"Ocurrió un error:\n{e}")
         finally:
-            self.btn_run.config(state=tk.NORMAL, text="🚀 INICIAR EXTRACCIÓN")
+            self.btn_run.config(state=tk.NORMAL, text="🚀 INICIAR EXTRACCIÓN CONSOLIDADA")
 
     def open_csv(self):
         if self.last_csv and os.path.exists(self.last_csv):

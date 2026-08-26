@@ -343,6 +343,8 @@ def descubrir_categorias(url_base, callback_log=None):
     log(f"🔍 Escaneando estructura de menús y categorías en: {url_base}")
 
     html = ""
+    effective_url = url_base
+
     if PLAYWRIGHT_AVAILABLE:
         try:
             with sync_playwright() as p:
@@ -357,6 +359,7 @@ def descubrir_categorias(url_base, callback_log=None):
                 try:
                     page.goto(url_base, wait_until="domcontentloaded", timeout=30000)
                     page.wait_for_timeout(2000)
+                    effective_url = page.url
                 except Exception:
                     pass
 
@@ -389,10 +392,12 @@ def descubrir_categorias(url_base, callback_log=None):
         try:
             resp = requests.get(url_base, headers=DEFAULT_HEADERS, timeout=15)
             html = resp.text
+            effective_url = resp.url
         except Exception as e:
             log(f"[-] Error accediendo a la URL: {e}")
             return {}
 
+    target_host = urllib.parse.urlparse(effective_url).netloc.replace('www.', '').lower()
     soup = BeautifulSoup(html, 'html.parser')
     links = {}
     descartar = [
@@ -400,7 +405,7 @@ def descubrir_categorias(url_base, callback_log=None):
         'cart', 'carrito', 'checkout', 'terminos', 'politica', 'privacidad', 'cuenta', 'mi-cuenta',
         'ayuda', 'blog', 'faq', 'cursos', 'marcas', 'module', 'quote', 'wishlist', 'favoritos',
         'seguimiento', 'arrepentimiento', 'devolucion', 'preguntas', 'instrucciones', 'whatsapp', 'tel:',
-        'medios-de-pago', 'entrega-a-domicilio', 'novedades', 'preguntas-frecuentes'
+        'medios-de-pago', 'entrega-a-domicilio', 'novedades', 'preguntas-frecuentes', 'customer', 'decorador'
     ]
 
     for a in soup.find_all('a', href=True):
@@ -414,10 +419,11 @@ def descubrir_categorias(url_base, callback_log=None):
         if any(d in href_clean.lower() or d in texto.lower() for d in descartar):
             continue
 
-        full_url = urllib.parse.urljoin(url_base, href_clean)
-        if not full_url.startswith(domain):
+        full_url = urllib.parse.urljoin(effective_url, href_clean)
+        link_host = urllib.parse.urlparse(full_url).netloc.replace('www.', '').lower()
+        if link_host != target_host:
             continue
-        if full_url == url_base or full_url == domain or full_url == domain + '/':
+        if full_url == effective_url or full_url.rstrip('/') == f"{urllib.parse.urlparse(effective_url).scheme}://{urllib.parse.urlparse(effective_url).netloc}":
             continue
 
         # Si el texto está vacío, inferir nombre del slug (ej: /pinturas/latex-interior -> Látex Interior)

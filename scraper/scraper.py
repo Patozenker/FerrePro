@@ -2,18 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
-  FERREPRO - SCRAPER UNIVERSAL DE PRODUCTOS (STANDALONE)
+  FERREPRO - SCRAPER UNIVERSAL DE PRODUCTOS (STANDALONE + SCROLL INFINITO)
 ===============================================================================
-Este script funciona de manera 100% independiente de FerrePro.
-Extrae productos, precios, fotos, categorías y códigos desde cualquier tienda web
-y genera un archivo CSV / Excel listo para importar en FerrePro.
-
-Uso:
-  1. Modo interactivo:
-     python scraper.py
-
-  2. Modo línea de comandos:
-     python scraper.py --url "https://ejemplo.com/categoria" --pages 3 --margin 50
+Extrae productos, precios, fotos, categorías y códigos desde cualquier tienda web:
+- Modo Estándar: Tiendas con paginación tradicional (Rápido / Requests).
+- Modo Dinámico: Tiendas con Scroll Infinito o JavaScript (Playwright / Headless).
+Genera un archivo CSV / Excel listo para importar en FerrePro.
 ===============================================================================
 """
 
@@ -21,12 +15,13 @@ import sys
 import os
 import re
 import json
+import time
 import argparse
 import urllib.parse
 from datetime import datetime
 from pathlib import Path
 
-# Soporte completo UTF-8 en terminales de Windows
+# Soporte UTF-8 en Windows
 try:
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -40,17 +35,22 @@ try:
     from bs4 import BeautifulSoup
     import pandas as pd
 except ImportError:
-    print("[!] Faltan dependencias. Instalalas ejecutando:")
-    print("    pip install requests beautifulsoup4 pandas openpyxl")
+    print("[!] Faltan dependencias. Instalalas con:")
+    print("    pip install requests beautifulsoup4 pandas openpyxl playwright")
     sys.exit(1)
 
-# Headers que simulan un navegador real moderno
+# Importar playwright opcionalmente
+PLAYWRIGHT_AVAILABLE = False
+try:
+    from playwright.sync_api import sync_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "es-419,es;q=0.9,en;q=0.8",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
 }
 
 def limpiar_precio(raw):
@@ -61,7 +61,6 @@ def limpiar_precio(raw):
     if not s:
         return 0.0
     
-    # Quitar símbolos de moneda y espacios
     s = re.sub(r'[^\d.,]', '', s)
     if not s:
         return 0.0
@@ -89,14 +88,12 @@ def limpiar_precio(raw):
         return 0.0
 
 def detectar_moneda(texto_crudo):
-    """Detecta si el precio está en USD o ARS."""
     t = str(texto_crudo).upper()
     if "USD" in t or "U$S" in t or "US$" in t or "DÓLAR" in t or "DOLAR" in t:
         return "USD"
     return "ARS"
 
 def extraer_json_ld(soup, url_base):
-    """Intenta extraer productos usando Schema.org JSON-LD structured data."""
     productos = []
     scripts = soup.find_all('script', type='application/ld+json')
     for script in scripts:
@@ -126,7 +123,6 @@ def extraer_json_ld(soup, url_base):
                 desc = item.get('description') or ''
                 cat = item.get('category') or ''
                 
-                # Imagen
                 img = item.get('image')
                 foto_url = ""
                 if isinstance(img, str):
@@ -136,7 +132,6 @@ def extraer_json_ld(soup, url_base):
                 elif isinstance(img, dict):
                     foto_url = img.get('url', '')
 
-                # Ofertas / Precio
                 offers = item.get('offers')
                 precio = 0.0
                 moneda = "ARS"
@@ -164,11 +159,9 @@ def extraer_json_ld(soup, url_base):
     return productos
 
 def extraer_html_cards(soup, url_base):
-    """Extrae productos analizando la estructura HTML (Shopify, WooCommerce, Magento, Prestashop, ML, etc.)."""
     productos = []
     domain = "/".join(url_base.split("/")[:3])
     
-    # 1. Rubro / Categoría de la página
     rubro = "General"
     cat_tag = soup.find(['h1', 'h2'], class_=lambda c: c and any(k in c.lower() for k in ['title', 'category', 'heading', 'page-title'])) or soup.find('h1')
     if cat_tag and cat_tag.text.strip():
@@ -179,10 +172,9 @@ def extraer_html_cards(soup, url_base):
         if rutas:
             rubro = rutas[-1]
 
-    # 2. Contenedores de productos
     items = soup.find_all(['li', 'article', 'div'], class_=lambda c: c and any(k in c.lower() for k in [
         'product-item', 'product-card', 'product-miniature', 'product-container',
-        'js-item-product', 'ui-search-layout__item', 'poly-card', 'vtex-product-summary'
+        'js-item-product', 'ui-search-layout__item', 'poly-card', 'vtex-product-summary', 'item-product'
     ]))
 
     if not items or len(items) < 2:
@@ -190,9 +182,8 @@ def extraer_html_cards(soup, url_base):
 
     for idx, item in enumerate(items):
         try:
-            # A) Título
             titulo = ""
-            title_tag = item.find(['h2', 'h3', 'h4', 'strong', 'a'], class_=lambda c: c and any(k in c.lower() for k in ['name', 'title', 'product-name', 'poly-component__title']))
+            title_tag = item.find(['h2', 'h3', 'h4', 'strong', 'a'], class_=lambda c: c and any(k in c.lower() for k in ['name', 'title', 'product-name', 'poly-component__title', 'item-name']))
             if title_tag:
                 titulo = title_tag.text.strip()
             
@@ -211,7 +202,6 @@ def extraer_html_cards(soup, url_base):
             if not titulo or len(titulo) < 3:
                 continue
 
-            # B) SKU / Código
             codigo = ""
             ref_tag = item.find(['span', 'div', 'p', 'small'], class_=lambda c: c and any(k in c.lower() for k in ['sku', 'code', 'ref', 'reference', 'articulo']))
             if ref_tag:
@@ -222,9 +212,8 @@ def extraer_html_cards(soup, url_base):
                 if codigo_match:
                     codigo = codigo_match.group(1).strip()
 
-            # C) Precio y Moneda
             precio_crudo = ""
-            price_box = item.find(['div', 'span', 'p'], class_=lambda c: c and any(k in c.lower() for k in ['price', 'precio', 'poly-price', 'current-price', 'special-price', 'price_color']))
+            price_box = item.find(['div', 'span', 'p'], class_=lambda c: c and any(k in c.lower() for k in ['price', 'precio', 'poly-price', 'current-price', 'special-price', 'price_color', 'item-price']))
             if price_box:
                 precio_crudo = price_box.text.strip()
             else:
@@ -235,7 +224,6 @@ def extraer_html_cards(soup, url_base):
             costo = limpiar_precio(precio_crudo)
             moneda = detectar_moneda(precio_crudo)
 
-            # D) Imagen
             foto_url = ""
             img_tag = item.find('img')
             if img_tag:
@@ -253,7 +241,6 @@ def extraer_html_cards(soup, url_base):
             elif foto_url and not foto_url.startswith('http'):
                 foto_url = urllib.parse.urljoin(url_base, foto_url)
 
-            # E) Enlace
             enlace = ""
             a_tag = item.find('a', href=True)
             if a_tag:
@@ -278,8 +265,144 @@ def extraer_html_cards(soup, url_base):
 
     return productos
 
-def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", margen_ganancia=50.0):
-    """Recorre la URL inicial y paginaciones para extraer todos los productos."""
+# =============================================================================
+# MODO DINÁMICO: SCROLL INFINITO CON PLAYWRIGHT
+# =============================================================================
+def scrapear_scroll_infinito(url, max_scrolls=15, scroll_delay=1.5, proveedor="Distribuidor Web", margen_ganancia=50.0, callback_log=None):
+    """
+    Navega en un navegador headless real, hace scroll continuo hacia abajo,
+    espera que carguen nuevos productos dinámicos y extrae todo el catálogo.
+    """
+    def log(msg):
+        if callback_log:
+            callback_log(msg)
+        else:
+            print(msg)
+
+    if not PLAYWRIGHT_AVAILABLE:
+        log("[-] Playwright no está disponible. Usando modo estático...")
+        return scrapear_url(url, max_paginas=5, proveedor=proveedor, margen_ganancia=margen_ganancia)
+
+    log(f"\n[+] Iniciando extracción con SCROLL INFINITO en navegador real: {url}")
+    log(f"[*] Configuración: Máx. scrolls: {max_scrolls} | Pausa: {scroll_delay}s | Proveedor: {proveedor}")
+
+    todos_productos = []
+    vistos = set()
+
+    with sync_playwright() as p:
+        try:
+            # Intentar lanzar Chromium o Edge
+            try:
+                browser = p.chromium.launch(headless=True)
+            except Exception:
+                browser = p.chromium.launch(channel="msedge", headless=True)
+        except Exception as e:
+            log(f"[-] No se pudo iniciar el navegador: {e}")
+            log("[*] Pasando a modo estático...")
+            return scrapear_url(url, max_paginas=5, proveedor=proveedor, margen_ganancia=margen_ganancia)
+
+        context = browser.new_context(
+            viewport={"width": 1366, "height": 900},
+            user_agent=DEFAULT_HEADERS["User-Agent"]
+        )
+        page = context.new_page()
+
+        try:
+            log("[*] Cargando página...")
+            page.goto(url, wait_until="domcontentloaded", timeout=45000)
+            page.wait_for_timeout(2000)
+        except Exception as err:
+            log(f"[-] Error al cargar URL: {err}")
+            browser.close()
+            return []
+
+        # Bucle de scroll infinito
+        last_height = page.evaluate("document.body.scrollHeight")
+        scroll_count = 0
+        sin_cambios = 0
+
+        while scroll_count < max_scrolls:
+            scroll_count += 1
+            log(f"[*] Scroll [{scroll_count}/{max_scrolls}] - Desplazando hacia abajo...")
+
+            # Scroll suave para disparar listeners de JavaScript
+            page.evaluate("""
+                window.scrollBy({
+                    top: window.innerHeight * 1.8,
+                    left: 0,
+                    behavior: 'smooth'
+                });
+            """)
+            page.wait_for_timeout(int(scroll_delay * 1000))
+
+            # Extraer el HTML actual renderizado
+            html_actual = page.content()
+            soup = BeautifulSoup(html_actual, 'html.parser')
+
+            prods_json = extraer_json_ld(soup, url)
+            prods_html = extraer_html_cards(soup, url)
+            candidatos = prods_json if len(prods_json) >= len(prods_html) and len(prods_json) > 0 else prods_html
+            if not candidatos:
+                candidatos = prods_json + prods_html
+
+            nuevos_en_este_scroll = 0
+            for prod in candidatos:
+                clave = (prod['nombre'].lower().strip(), prod['costo'])
+                if clave not in vistos and len(prod['nombre']) > 2:
+                    vistos.add(clave)
+                    todos_productos.append(prod)
+                    nuevos_en_este_scroll += 1
+
+            log(f"   -> Total acumulado: {len(todos_productos)} productos (+{nuevos_en_este_scroll} en este scroll)")
+
+            # Verificar si llegamos al final absoluto de la página
+            new_height = page.evaluate("document.body.scrollHeight")
+            if new_height == last_height and nuevos_en_este_scroll == 0:
+                sin_cambios += 1
+                if sin_cambios >= 3:
+                    log("[*] Se alcanzó el final de la página (no hay más contenido).")
+                    break
+            else:
+                sin_cambios = 0
+            last_height = new_height
+
+        browser.close()
+
+    # Formatear al estándar FerrePro
+    formateados = []
+    for i, p in enumerate(todos_productos, start=1):
+        costo = p['costo']
+        venta = round(costo * (1 + margen_ganancia / 100)) if costo > 0 else 0
+        sku = p['sku'] if p['sku'] else f"IMP-{str(i).zfill(4)}"
+
+        formateados.append({
+            "sku": sku,
+            "nombre": p['nombre'],
+            "categoria": p['categoria'] if p['categoria'] else "Herramientas",
+            "costo": costo,
+            "venta": venta,
+            "stock": 10,
+            "minStock": 3,
+            "foto": p['foto'],
+            "descripcion": p['descripcion'],
+            "moneda": p['moneda'],
+            "proveedor": proveedor,
+            "enlace": p['enlace'],
+            "fecha_extraccion": datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
+
+    return formateados
+
+# =============================================================================
+# MODO ESTÁNDAR (PAGINACIÓN RÁPIDA HTTP)
+# =============================================================================
+def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", margen_ganancia=50.0, callback_log=None):
+    def log(msg):
+        if callback_log:
+            callback_log(msg)
+        else:
+            print(msg)
+
     todos_productos = []
     vistos = set()
     url_actual = url_inicial
@@ -287,27 +410,25 @@ def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", marge
     session = requests.Session()
     session.headers.update(DEFAULT_HEADERS)
 
-    print(f"\n[+] Iniciando extraccion desde: {url_inicial}")
-    print(f"[*] Configuracion: Max paginas: {max_paginas} | Margen: {margen_ganancia}% | Proveedor: '{proveedor}'\n")
+    log(f"\n[+] Iniciando extracción estática: {url_inicial}")
+    log(f"[*] Configuración: Máx. páginas: {max_paginas} | Margen: {margen_ganancia}% | Proveedor: '{proveedor}'\n")
 
     while url_actual and pagina <= max_paginas:
-        print(f"[*] [{pagina}/{max_paginas}] Consultando: {url_actual}")
+        log(f"[*] [{pagina}/{max_paginas}] Consultando: {url_actual}")
         try:
             resp = session.get(url_actual, timeout=18)
             if resp.status_code != 200:
-                print(f"[!] El servidor respondio con codigo HTTP {resp.status_code}")
+                log(f"[!] El servidor respondió con código HTTP {resp.status_code}")
                 break
         except Exception as err:
-            print(f"[-] Error de conexion: {err}")
+            log(f"[-] Error de conexión: {err}")
             break
 
         soup = BeautifulSoup(resp.text, 'html.parser')
 
-        # Probar primero JSON-LD y luego HTML
         prods_json = extraer_json_ld(soup, url_actual)
         prods_html = extraer_html_cards(soup, url_actual)
 
-        # Combinar priorizando los que tengan precio > 0 y foto
         candidatos = prods_json if len(prods_json) >= len(prods_html) and len(prods_json) > 0 else prods_html
         if not candidatos:
             candidatos = prods_json + prods_html
@@ -320,12 +441,11 @@ def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", marge
                 todos_productos.append(p)
                 agregados_pag += 1
 
-        print(f"   -> {agregados_pag} productos encontrados en esta pagina.")
+        log(f"   -> {agregados_pag} productos encontrados en esta página.")
 
         if agregados_pag == 0 and pagina > 1:
             break
 
-        # 3. Detectar botón o enlace de página siguiente
         next_btn = (soup.find('a', rel='next') or
                     soup.find('a', class_=lambda c: c and any(k in c.lower() for k in ['next', 'siguiente', 'pagination__next'])) or
                     soup.find('a', title=lambda t: t and 'siguiente' in t.lower()))
@@ -341,7 +461,6 @@ def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", marge
                 url_actual = urllib.parse.urljoin(url_actual, next_url)
             pagina += 1
         else:
-            # Probar parámetro común ?page=N o ?p=N si no hay botón
             if "page=" in url_actual:
                 url_actual = re.sub(r'page=\d+', f'page={pagina+1}', url_actual)
             elif "p=" in url_actual:
@@ -350,11 +469,9 @@ def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", marge
                 url_actual = None
             pagina += 1
 
-    # Formatear productos al estándar final de FerrePro
     formateados = []
     for i, p in enumerate(todos_productos, start=1):
         costo = p['costo']
-        # Calcular precio de venta con el margen
         venta = round(costo * (1 + margen_ganancia / 100)) if costo > 0 else 0
         sku = p['sku'] if p['sku'] else f"IMP-{str(i).zfill(4)}"
 
@@ -377,14 +494,11 @@ def scrapear_url(url_inicial, max_paginas=5, proveedor="Distribuidor Web", marge
     return formateados
 
 def exportar_archivos(productos, ruta_salida_base="productos_ferrepro"):
-    """Guarda los productos en formato CSV (con BOM UTF-8) y Excel XLSX."""
     if not productos:
         print("[!] No hay productos para exportar.")
         return None, None
 
     df = pd.DataFrame(productos)
-
-    # Columnas ordenadas listas para FerrePro
     columnas = [
         "sku", "nombre", "categoria", "costo", "venta",
         "stock", "minStock", "foto", "descripcion",
@@ -395,7 +509,6 @@ def exportar_archivos(productos, ruta_salida_base="productos_ferrepro"):
     csv_path = f"{ruta_salida_base}.csv"
     xlsx_path = f"{ruta_salida_base}.xlsx"
 
-    # Exportar CSV con UTF-8 con BOM para que Excel y FerrePro lean tildes y caracteres especiales perfectamente
     df_clean.to_csv(csv_path, index=False, encoding='utf-8-sig')
     try:
         df_clean.to_excel(xlsx_path, index=False)
@@ -403,22 +516,24 @@ def exportar_archivos(productos, ruta_salida_base="productos_ferrepro"):
         xlsx_path = None
 
     print("\n" + "="*60)
-    print(f"[OK] EXTRACCION COMPLETADA CON EXITO: {len(productos)} productos")
+    print(f"[OK] EXTRACCIÓN COMPLETADA: {len(productos)} productos guardados")
     print("="*60)
     print(f"[*] CSV generado:   {Path(csv_path).resolve()}")
     if xlsx_path:
         print(f"[*] Excel generado: {Path(xlsx_path).resolve()}")
     print("="*60)
-    print("[*] Podes arrastrar este archivo CSV directamente a FerrePro en:")
-    print("    Inventario > Boton 'Importar' > Subir archivo")
+    print("[*] Podés arrastrar este archivo CSV a FerrePro en:")
+    print("    Inventario > Botón 'Importar' > Subir archivo")
     print("="*60 + "\n")
 
     return csv_path, xlsx_path
 
 def main():
-    parser = argparse.ArgumentParser(description="FerrePro Scraper Universal de Productos (Standalone)")
+    parser = argparse.ArgumentParser(description="FerrePro Scraper Universal (Standalone + Scroll Infinito)")
     parser.add_argument("--url", help="URL del catálogo o categoría a scrapear")
-    parser.add_argument("--pages", type=int, default=3, help="Cantidad máxima de páginas a recorrer (default: 3)")
+    parser.add_argument("--scroll", action="store_true", help="Activar modo Scroll Infinito (Playwright / Headless)")
+    parser.add_argument("--scrolls", type=int, default=15, help="Cantidad de scrolls hacia abajo en modo dinámico (default: 15)")
+    parser.add_argument("--pages", type=int, default=3, help="Cantidad máxima de páginas en modo estático (default: 3)")
     parser.add_argument("--margin", type=float, default=50.0, help="Margen de ganancia %% para calcular precio de venta (default: 50)")
     parser.add_argument("--prov", default="Distribuidor Web", help="Nombre del proveedor asignado")
     parser.add_argument("--output", default="productos_ferrepro", help="Nombre base del archivo de salida (sin extensión)")
@@ -426,17 +541,26 @@ def main():
     args = parser.parse_args()
 
     url = args.url
+    scroll_mode = args.scroll
+
     if not url:
         print("\n" + "#"*60)
         print("   FERREPRO - SCRAPER UNIVERSAL DE PRODUCTOS")
         print("#"*60 + "\n")
-        url = input("Ingresa la URL del catalogo o proveedor: ").strip()
+        url = input("Ingresá la URL del catálogo o proveedor: ").strip()
         if not url:
-            print("[-] No se ingreso ninguna URL. Saliendo.")
+            print("[-] No se ingresó ninguna URL. Saliendo.")
             return
 
-        pages_input = input("Cuantas paginas queres recorrer? (Enter para 3): ").strip()
-        pages = int(pages_input) if pages_input.isdigit() else 3
+        scroll_choice = input("¿La página tiene Scroll Infinito o carga dinámica? (s/N): ").strip().lower()
+        scroll_mode = scroll_choice in ['s', 'si', 'y', 'yes', 'true', '1']
+
+        if scroll_mode:
+            scrolls_input = input("¿Cuántos scrolls hacia abajo hacer? (Enter para 15): ").strip()
+            scrolls_count = int(scrolls_input) if scrolls_input.isdigit() else 15
+        else:
+            pages_input = input("¿Cuántas páginas querés recorrer? (Enter para 3): ").strip()
+            pages_count = int(pages_input) if pages_input.isdigit() else 3
 
         margin_input = input("Margen de ganancia % sugerido (Enter para 50%): ").strip()
         margin = float(margin_input) if margin_input.replace('.', '').isdigit() else 50.0
@@ -447,7 +571,8 @@ def main():
         timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         output = f"productos_{timestamp}"
     else:
-        pages = args.pages
+        scrolls_count = args.scrolls
+        pages_count = args.pages
         margin = args.margin
         prov = args.prov
         output = args.output
@@ -455,7 +580,16 @@ def main():
     if not url.startswith("http://") and not url.startswith("https://"):
         url = "https://" + url
 
-    prods = scrapear_url(url, max_paginas=pages, proveedor=prov, margen_ganancia=margin)
+    if scroll_mode:
+        prods = scrapear_scroll_infinito(url, max_scrolls=scrolls_count, proveedor=prov, margen_ganancia=margin)
+    else:
+        prods = scrapear_url(url, max_paginas=pages_count, proveedor=prov, margen_ganancia=margin)
+        # Si el modo estático no encontró nada, ofrecer probar scroll infinito
+        if len(prods) == 0 and PLAYWRIGHT_AVAILABLE:
+            print("\n[!] No se detectaron productos con paginación tradicional.")
+            print("[*] Reintentando automáticamente con modo Scroll Infinito (JavaScript)...")
+            prods = scrapear_scroll_infinito(url, max_scrolls=12, proveedor=prov, margen_ganancia=margin)
+
     exportar_archivos(prods, ruta_salida_base=output)
 
 if __name__ == "__main__":

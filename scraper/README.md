@@ -1,52 +1,57 @@
-# 🔧 FerrePro — Scraper Universal de Productos (Standalone)
+# 🔧 FerrePro — Scraper Universal de Productos (Standalone + Scroll Infinito)
 
 Herramienta independiente para extraer catálogos web, listas de precios, fotos y códigos de cualquier tienda online y generar un archivo **CSV / Excel** 100% compatible con **FerrePro**.
 
 ---
 
+## ⚡ Novedad: Soporte para Scroll Infinito y Páginas Dinámicas (JavaScript)
+El scraper ahora cuenta con dos modos:
+1. **Modo Estándar (Rápido):** Para sitios con paginación tradicional (Página 1, 2, 3...).
+2. **Modo Scroll Infinito (Playwright / Navegador Real):** Para tiendas creadas con React, Vue, Next.js, MercadoLibre o catálogos que cargan más productos a medida que hacés scroll hacia abajo.
+
+---
+
 ## 🚀 Formas de Ejecución
 
-### 1. Con Doble Clic (Más fácil)
+### 1. Con Doble Clic (Ventana de Escritorio)
 Hacé doble clic en **`ejecutar_scraper.bat`**:
-- **Opción 1:** Abre una ventana visual donde pegás la URL, elegís las páginas y hacés clic en *Iniciar Extracción*.
-- **Opción 2:** Ejecuta el asistente interactivo en la terminal.
+- **Opción 1:** Abre la interfaz gráfica moderna.
+- Pegás la URL, marcás la casilla **⚡ Activar modo Scroll Infinito**, elegís la cantidad de scrolls y hacés clic en **🚀 INICIAR EXTRACCIÓN**.
+- Al terminar podés abrir el CSV en Excel o la carpeta de guardado con un clic.
 
 ### 2. Desde la Terminal / Consola
 ```bash
 cd scraper
 
-# Modo interactivo paso a paso:
-python scraper.py
+# Con Scroll Infinito:
+python scraper.py --url "https://tienda-proveedor.com/herramientas" --scroll --scrolls 15 --margin 50 --prov "Distribuidora Centro"
 
-# Modo directo por parámetros:
-python scraper.py --url "https://tienda-proveedor.com/herramientas" --pages 3 --margin 50 --prov "Distribuidora Centro"
+# Con Paginación tradicional:
+python scraper.py --url "https://tienda-proveedor.com/herramientas" --pages 3 --margin 50
 ```
 
 ---
 
-## 📊 Estructura del CSV Generado
-El archivo `.csv` (y `.xlsx`) generado contiene exactamente las columnas requeridas por FerrePro:
+## 📊 Columnas del CSV Generado
 
 | Columna | Descripción |
 |---|---|
-| `sku` | Código de artículo o SKU extraído (o autogenerado `IMP-0001`) |
-| `nombre` | Título del producto limpio |
+| `sku` | Código de artículo o SKU extraído |
+| `nombre` | Título del producto |
 | `categoria` | Rubro o categoría detectada |
 | `costo` | Precio base extraído de la web |
-| `venta` | Precio de venta sugerido (calculado con el margen de ganancia configurado) |
-| `stock` | Stock inicial sugerido (default: 10) |
-| `minStock` | Alerta de stock mínimo (default: 3) |
-| `foto` | Enlace directo a la imagen en alta calidad |
+| `venta` | Precio de venta calculado con tu margen % |
+| `stock` | Stock inicial asignado |
+| `minStock` | Alerta de stock mínimo |
+| `foto` | URL de la imagen en alta resolución |
 | `descripcion` | Descripción del producto |
 | `moneda` | ARS o USD |
-| `proveedor` | Nombre del proveedor asignado |
-| `enlace` | URL original del producto |
+| `proveedor` | Nombre del proveedor |
+| `enlace` | URL original de la publicación |
 
 ---
 
 ## 📥 ¿Cómo importar el archivo en FerrePro?
-1. Abrí **FerrePro** ([ferrepro.netlify.app](https://ferrepro.netlify.app/) o local).
-2. Andá a la sección **Inventario**.
-3. Hacé clic en el botón **Importar** (arriba a la derecha).
-4. Arrastrá el archivo `.csv` generado o seleccionalo con el botón de subir.
-5. Verificá la vista previa y confirmá con **Importar Productos**. ¡Listo!
+1. Abrí **FerrePro** ([ferrepro.netlify.app](https://ferrepro.netlify.app/)).
+2. Andá a **Inventario > Importar**.
+3. Arrastrá el archivo `.csv` generado y confirmá con **Importar Productos**.

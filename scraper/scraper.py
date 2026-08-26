@@ -354,18 +354,29 @@ def descubrir_categorias(url_base, callback_log=None):
                     viewport={"width": 1366, "height": 900},
                     user_agent=DEFAULT_HEADERS["User-Agent"]
                 )
-                page.goto(url_base, wait_until="domcontentloaded", timeout=30000)
-                page.wait_for_timeout(2000)
+                try:
+                    page.goto(url_base, wait_until="domcontentloaded", timeout=30000)
+                    page.wait_for_timeout(2000)
+                except Exception:
+                    pass
 
-                # Desplegar menús interactivos / mega-menús si existen
-                for s in ["text=Todos los productos", "text=Categorías", "text=Productos", "button[id*='menu']", "button[class*='menu']", ".menu-button", ".nav-toggle"]:
+                # Desplegar menús interactivos / mega-menús / VTEX
+                for s in [
+                    ".vtex-mega-menu-2-x-triggerContainer",
+                    ".vtex-menu-2-x-menuItem",
+                    "text=Todos los productos",
+                    "text=Categorías",
+                    "text=Productos",
+                    "button[id*='menu']",
+                    "button[class*='menu']",
+                    ".menu-button",
+                    ".nav-toggle"
+                ]:
                     try:
-                        el = page.query_selector(s)
-                        if el:
+                        els = page.query_selector_all(s)
+                        for el in els[:4]:
                             el.hover()
-                            page.wait_for_timeout(600)
-                            el.click()
-                            page.wait_for_timeout(600)
+                            page.wait_for_timeout(300)
                     except:
                         pass
 
@@ -402,8 +413,6 @@ def descubrir_categorias(url_base, callback_log=None):
             continue
         if any(d in href_clean.lower() or d in texto.lower() for d in descartar):
             continue
-        if len(texto) < 3 or len(texto) > 50:
-            continue
 
         full_url = urllib.parse.urljoin(url_base, href_clean)
         if not full_url.startswith(domain):
@@ -411,10 +420,14 @@ def descubrir_categorias(url_base, callback_log=None):
         if full_url == url_base or full_url == domain or full_url == domain + '/':
             continue
 
+        # Si el texto está vacío, inferir nombre del slug (ej: /pinturas/latex-interior -> Látex Interior)
         nombre = re.sub(r'[\r\n\t]+', ' ', texto).strip()
-        nombre = re.sub(r'\s*\(\d+\)$', '', nombre).strip() # Quitar contador ej "Látex (24)" -> "Látex"
+        nombre = re.sub(r'\s*\(\d+\)$', '', nombre).strip()
+        if not nombre:
+            slug = full_url.rstrip('/').split('/')[-1]
+            nombre = slug.replace('-', ' ').capitalize()
 
-        if full_url not in links and len(nombre) >= 3:
+        if full_url not in links and len(nombre) >= 3 and len(nombre) <= 50:
             links[full_url] = nombre
 
     log(f"✅ Se detectaron {len(links)} categorías / carpetas en el sitio web.")

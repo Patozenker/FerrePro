@@ -546,7 +546,7 @@ export default function Ventas({ ventas, setVentas, productos, setProductos, cli
                             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.boxShadow=`0 0 0 2px ${C.accentDim}`}}
                             onMouseLeave={e=>{e.currentTarget.style.borderColor=`${C.accent}40`;e.currentTarget.style.boxShadow='none'}}>
                             <div style={{width:'100%',paddingTop:'100%',position:'relative',background:C.surface}}>
-                              {p.foto ? <img src={p.foto} alt={p.nombre} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/> :
+                              {(p.foto || p.imagen) ? <img src={p.foto || p.imagen} alt={p.nombre} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/> :
                                 <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
                                   <ImageIcon size={20} color={C.border}/><span style={{fontSize:9,color:C.border}}>sin foto</span>
                                 </div>}
@@ -574,8 +574,8 @@ export default function Ventas({ ventas, setVentas, productos, setProductos, cli
                         onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.boxShadow='none'}}
                       >
                         <div style={{width:'100%',paddingTop:'100%',position:'relative',background:C.surface}}>
-                          {p.foto
-                            ? <img src={p.foto} alt={p.nombre} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
+                          {(p.foto || p.imagen)
+                            ? <img src={p.foto || p.imagen} alt={p.nombre} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
                             : <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
                                 <ImageIcon size={20} color={C.border}/>
                                 <span style={{fontSize:9,color:C.border}}>sin foto</span>
@@ -614,7 +614,7 @@ export default function Ventas({ ventas, setVentas, productos, setProductos, cli
                             style={{padding:'8px 12px',cursor:'pointer',borderBottom:`1px solid ${C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}
                             onMouseEnter={e=>e.currentTarget.style.background=C.card}
                             onMouseLeave={e=>e.currentTarget.style.background=''}>
-                            {p.foto && <img src={p.foto} alt="" style={{width:30,height:30,objectFit:'cover',borderRadius:5,flexShrink:0}}/>}
+                            {(p.foto || p.imagen) && <img src={p.foto || p.imagen} alt="" style={{width:30,height:30,objectFit:'cover',borderRadius:5,flexShrink:0}}/>}
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{fontSize:13,fontWeight:500,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nombre}</div>
                               <div style={{fontSize:11,color:C.muted}}>{p.sku} · stock: {p.stock}</div>
@@ -635,7 +635,7 @@ export default function Ventas({ ventas, setVentas, productos, setProductos, cli
                               style={{padding:'8px 12px',cursor:'pointer',borderBottom:`1px solid ${C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}
                               onMouseEnter={e=>e.currentTarget.style.background=C.card}
                               onMouseLeave={e=>e.currentTarget.style.background=''}>
-                              {p.foto && <img src={p.foto} alt="" style={{width:28,height:28,objectFit:'cover',borderRadius:4,flexShrink:0}}/>}
+                              {(p.foto || p.imagen) && <img src={p.foto || p.imagen} alt="" style={{width:28,height:28,objectFit:'cover',borderRadius:4,flexShrink:0}}/>}
                               <div style={{flex:1,minWidth:0}}>
                                 <div style={{fontSize:13,fontWeight:500,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nombre}</div>
                                 <div style={{fontSize:11,color:C.muted}}>{p.sku} · stock: {p.stock}</div>
@@ -653,7 +653,7 @@ export default function Ventas({ ventas, setVentas, productos, setProductos, cli
                           style={{padding:'7px 12px',cursor:'pointer',borderBottom:`1px solid ${C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}
                           onMouseEnter={e=>e.currentTarget.style.background=C.card}
                           onMouseLeave={e=>e.currentTarget.style.background=''}>
-                          {p.foto && <img src={p.foto} alt="" style={{width:26,height:26,objectFit:'cover',borderRadius:4,flexShrink:0}}/>}
+                          {(p.foto || p.imagen) && <img src={p.foto || p.imagen} alt="" style={{width:26,height:26,objectFit:'cover',borderRadius:4,flexShrink:0}}/>}
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:12,fontWeight:500,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nombre}</div>
                             <div style={{fontSize:10,color:C.muted}}>{p.sku} · stock: {p.stock}</div>

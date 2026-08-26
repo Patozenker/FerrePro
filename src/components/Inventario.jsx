@@ -379,8 +379,8 @@ export default function Inventario({ productos, setProductos, proveedores, categ
                 {/* Imagen */}
                 <div style={{ height:140, borderRadius:8, overflow:"hidden", marginBottom:10, background:C.surface,
                   display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  {p.foto
-                    ? <img src={p.foto} alt={p.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  {(p.foto || p.imagen)
+                    ? <img src={p.foto || p.imagen} alt={p.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
                     : <ImageIcon size={40} color={C.muted}/>
                   }
                 </div>
@@ -446,14 +446,14 @@ export default function Inventario({ productos, setProductos, proveedores, categ
                 </td>
                 {/* Foto */}
                 <td style={{ ...s.td, width:44, padding:'6px 8px' }}>
-                  {p.foto
+                  {(p.foto || p.imagen)
                     ? <div style={{ position:'relative', width:36, height:36 }}>
-                        <img src={p.foto} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:6,
+                        <img src={p.foto || p.imagen} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:6,
                           border:`1px solid ${C.border}`, cursor:'zoom-in', display:'block' }}
-                          onClick={()=>setLightbox({ src:p.foto, nombre:p.nombre })}/>
+                          onClick={()=>setLightbox({ src: p.foto || p.imagen, nombre: p.nombre })}/>
                         <div style={{ position:'absolute',inset:0,borderRadius:6,display:'flex',alignItems:'center',
                           justifyContent:'center',background:'rgba(0,0,0,0)',transition:'background 0.15s',cursor:'zoom-in' }}
-                          onClick={()=>setLightbox({ src:p.foto, nombre:p.nombre })}
+                          onClick={()=>setLightbox({ src: p.foto || p.imagen, nombre: p.nombre })}
                           onMouseEnter={e=>{e.currentTarget.style.background='rgba(0,0,0,0.35)'}}
                           onMouseLeave={e=>{e.currentTarget.style.background='rgba(0,0,0,0)'}}>
                           <ZoomIn size={13} color="#fff" style={{ opacity:0,transition:'opacity 0.15s' }}
@@ -642,16 +642,16 @@ export default function Inventario({ productos, setProductos, proveedores, categ
           <div style={{ marginTop:4 }}>
             <label style={s.label}>Foto del producto</label>
             <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-              {form.foto
+              {(form.foto || form.imagen)
                 ? <>
-                    <img src={form.foto} alt="" onClick={()=>setLightbox({src:form.foto,nombre:form.nombre})}
+                    <img src={form.foto || form.imagen} alt="" onClick={()=>setLightbox({src: form.foto || form.imagen, nombre: form.nombre})}
                       style={{ width:72, height:72, objectFit:'cover', borderRadius:8,
                         border:`1px solid ${C.border}`, cursor:'zoom-in' }}/>
                     <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                       <button style={{ ...s.btn('ghost'), fontSize:12, padding:'5px 10px' }} onClick={()=>imgRef.current.click()}>
                         <ImageIcon size={12}/> Cambiar foto
                       </button>
-                      <button style={{ ...s.btn('danger'), fontSize:12, padding:'5px 10px' }} onClick={()=>setForm(f=>({...f,foto:null}))}>
+                      <button style={{ ...s.btn('danger'), fontSize:12, padding:'5px 10px' }} onClick={()=>setForm(f=>({...f, foto: null, imagen: null}))}>
                         <X size={12}/> Quitar foto
                       </button>
                     </div>

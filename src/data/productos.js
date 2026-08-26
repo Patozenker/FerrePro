@@ -1,5 +1,5 @@
-export const initProductos = [
-  // ── HERRAMIENTAS ──
+﻿export const initProductos = [
+  // â”€â”€ HERRAMIENTAS â”€â”€
   {
     id: 1,
     sku: "HER-00001",
@@ -14,7 +14,7 @@ export const initProductos = [
     moneda: "ARS",
     provId: 1,
     ubicacion: "Pasillo 1 - Estante A",
-    imagen: "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80",
+    foto: "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80",
     descripcion: "Taladro percutor con selector de impacto y velocidad variable reversible."
   },
   {
@@ -31,8 +31,8 @@ export const initProductos = [
     moneda: "ARS",
     provId: 1,
     ubicacion: "Pasillo 1 - Estante B",
-    imagen: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Amoladora para corte y desbaste en metal y mampostería."
+    foto: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Amoladora para corte y desbaste en metal y mamposterÃ­a."
   },
   {
     id: 3,
@@ -48,7 +48,7 @@ export const initProductos = [
     moneda: "ARS",
     provId: 1,
     ubicacion: "Pasillo 1 - Estante C",
-    imagen: "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=400&q=80",
+    foto: "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=400&q=80",
     descripcion: "Juego de llaves cromo vanadio forjadas con estuche organizador."
   },
   {
@@ -65,13 +65,13 @@ export const initProductos = [
     moneda: "ARS",
     provId: 1,
     ubicacion: "Pasillo 1 - Estante D",
-    imagen: "https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Martillo con uña sacaclavos y mango antideslizante con fibra de vidrio."
+    foto: "https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Martillo con uÃ±a sacaclavos y mango antideslizante con fibra de vidrio."
   },
   {
     id: 5,
     sku: "HER-00005",
-    nombre: "Cinta Métrica 5m Auto-Lock Profesional",
+    nombre: "Cinta MÃ©trica 5m Auto-Lock Profesional",
     cat: "Herramientas",
     cats: ["Herramientas"],
     costo: 4500,
@@ -82,8 +82,8 @@ export const initProductos = [
     moneda: "ARS",
     provId: 1,
     ubicacion: "Caja Mostrador",
-    imagen: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Cinta métrica con freno automático y gancho imantado."
+    foto: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Cinta mÃ©trica con freno automÃ¡tico y gancho imantado."
   },
   {
     id: 6,
@@ -99,11 +99,11 @@ export const initProductos = [
     moneda: "ARS",
     provId: 1,
     ubicacion: "Pasillo 1 - Estante D",
-    imagen: "https://images.unsplash.com/photo-1580983218765-f663bec07b37?auto=format&fit=crop&w=400&q=80",
+    foto: "https://images.unsplash.com/photo-1580983218765-f663bec07b37?auto=format&fit=crop&w=400&q=80",
     descripcion: "Nivel de perfil de aluminio reforzado con gotas calibradas."
   },
 
-  // ── FIJACIONES ──
+  // â”€â”€ FIJACIONES â”€â”€
   {
     id: 7,
     sku: "FIJ-00001",
@@ -118,8 +118,8 @@ export const initProductos = [
     moneda: "ARS",
     provId: 5,
     ubicacion: "Pasillo 2 - Estante A",
-    imagen: "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Tornillo para perfilería drywall y chapa fina zincado."
+    foto: "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Tornillo para perfilerÃ­a drywall y chapa fina zincado."
   },
   {
     id: 8,
@@ -135,13 +135,13 @@ export const initProductos = [
     moneda: "ARS",
     provId: 5,
     ubicacion: "Pasillo 2 - Estante A",
-    imagen: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Tornillo fosfatizado negro para fijación de placas de yeso."
+    foto: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Tornillo fosfatizado negro para fijaciÃ³n de placas de yeso."
   },
   {
     id: 9,
     sku: "FIJ-00003",
-    nombre: "Tarugo Nylon N° 8 con Tope (Bolsa x 100)",
+    nombre: "Tarugo Nylon NÂ° 8 con Tope (Bolsa x 100)",
     cat: "Fijaciones",
     cats: ["Fijaciones"],
     costo: 3200,
@@ -152,8 +152,8 @@ export const initProductos = [
     moneda: "ARS",
     provId: 5,
     ubicacion: "Pasillo 2 - Gaveta 4",
-    imagen: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Tarugo de poliamida virgen para mampostería maciza y hueca."
+    foto: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Tarugo de poliamida virgen para mamposterÃ­a maciza y hueca."
   },
   {
     id: 10,
@@ -169,15 +169,15 @@ export const initProductos = [
     moneda: "ARS",
     provId: 5,
     ubicacion: "Pasillo 2 - Gaveta 8",
-    imagen: "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
+    foto: "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
     descripcion: "Tirafondo zincado con cabeza hexagonal para cargas pesadas."
   },
 
-  // ── PINTURAS ──
+  // â”€â”€ PINTURAS â”€â”€
   {
     id: 11,
     sku: "PIN-00001",
-    nombre: "Látex Interior Lavable Antihongo Blanco 20 Lts",
+    nombre: "LÃ¡tex Interior Lavable Antihongo Blanco 20 Lts",
     cat: "Pinturas",
     cats: ["Pinturas"],
     costo: 54000,
@@ -188,13 +188,13 @@ export const initProductos = [
     moneda: "ARS",
     provId: 2,
     ubicacion: "Sector Pinturas - Tarima 1",
-    imagen: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Pintura al látex de alto poder cubritivo y acabado mate sedoso."
+    foto: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Pintura al lÃ¡tex de alto poder cubritivo y acabado mate sedoso."
   },
   {
     id: 12,
     sku: "PIN-00002",
-    nombre: "Esmalte Sintético Satinado Blanco 4 Lts",
+    nombre: "Esmalte SintÃ©tico Satinado Blanco 4 Lts",
     cat: "Pinturas",
     cats: ["Pinturas"],
     costo: 24500,
@@ -205,13 +205,13 @@ export const initProductos = [
     moneda: "ARS",
     provId: 2,
     ubicacion: "Sector Pinturas - Estante 2",
-    imagen: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Esmalte sintético triple acción (antióxido, convertidor y esmalte)."
+    foto: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Esmalte sintÃ©tico triple acciÃ³n (antiÃ³xido, convertidor y esmalte)."
   },
   {
     id: 13,
     sku: "PIN-00003",
-    nombre: "Pincel Profesional N° 20 Cerdas Puras",
+    nombre: "Pincel Profesional NÂ° 20 Cerdas Puras",
     cat: "Pinturas",
     cats: ["Pinturas"],
     costo: 2900,
@@ -222,7 +222,7 @@ export const initProductos = [
     moneda: "ARS",
     provId: 2,
     ubicacion: "Sector Pinturas - Expositor",
-    imagen: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=400&q=80",
+    foto: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=400&q=80",
     descripcion: "Pincel virola 1 para esmaltes y barnices sin dejar marcas."
   },
   {
@@ -239,15 +239,15 @@ export const initProductos = [
     moneda: "ARS",
     provId: 2,
     ubicacion: "Sector Pinturas - Expositor",
-    imagen: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Rodillo de lana natural para látex y superficies rugosas o lisas."
+    foto: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Rodillo de lana natural para lÃ¡tex y superficies rugosas o lisas."
   },
 
-  // ── ELECTRICIDAD ──
+  // â”€â”€ ELECTRICIDAD â”€â”€
   {
     id: 15,
     sku: "ELE-00001",
-    nombre: "Cable Unipolar 2.5 mm² Normalizado (Rollo 100m) Celeste",
+    nombre: "Cable Unipolar 2.5 mmÂ² Normalizado (Rollo 100m) Celeste",
     cat: "Electricidad",
     cats: ["Electricidad"],
     costo: 38000,
@@ -258,13 +258,13 @@ export const initProductos = [
     moneda: "ARS",
     provId: 3,
     ubicacion: "Pasillo 3 - Tarima Cables",
-    imagen: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Cable de cobre electrolítico de 100m con aislación antillama IRAM."
+    foto: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Cable de cobre electrolÃ­tico de 100m con aislaciÃ³n antillama IRAM."
   },
   {
     id: 16,
     sku: "ELE-00002",
-    nombre: "Cable Unipolar 2.5 mm² Normalizado (Rollo 100m) Marrón",
+    nombre: "Cable Unipolar 2.5 mmÂ² Normalizado (Rollo 100m) MarrÃ³n",
     cat: "Electricidad",
     cats: ["Electricidad"],
     costo: 38000,
@@ -275,13 +275,13 @@ export const initProductos = [
     moneda: "ARS",
     provId: 3,
     ubicacion: "Pasillo 3 - Tarima Cables",
-    imagen: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Cable de cobre electrolítico de 100m con aislación antillama IRAM."
+    foto: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Cable de cobre electrolÃ­tico de 100m con aislaciÃ³n antillama IRAM."
   },
   {
     id: 17,
     sku: "ELE-00003",
-    nombre: "Termomagnética Bipolar 2x20A Curva C",
+    nombre: "TermomagnÃ©tica Bipolar 2x20A Curva C",
     cat: "Electricidad",
     cats: ["Electricidad"],
     costo: 7800,
@@ -292,8 +292,8 @@ export const initProductos = [
     moneda: "ARS",
     provId: 3,
     ubicacion: "Pasillo 3 - Vitrina",
-    imagen: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Interruptor termomagnético 3kA para riel DIN estándar."
+    foto: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Interruptor termomagnÃ©tico 3kA para riel DIN estÃ¡ndar."
   },
   {
     id: 18,
@@ -309,7 +309,7 @@ export const initProductos = [
     moneda: "ARS",
     provId: 3,
     ubicacion: "Pasillo 3 - Vitrina",
-    imagen: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80",
+    foto: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80",
     descripcion: "Protector diferencial contra fugas a tierra de alta sensibilidad."
   },
   {
@@ -326,17 +326,17 @@ export const initProductos = [
     moneda: "ARS",
     provId: 3,
     ubicacion: "Caja Mostrador",
-    imagen: "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Cinta aisladora ignífuga autoextinguible hasta 600V."
+    foto: "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Cinta aisladora ignÃ­fuga autoextinguible hasta 600V."
   },
 
-  // ── PLOMERÍA ──
+  // â”€â”€ PLOMERÃA â”€â”€
   {
     id: 20,
     sku: "PLO-00001",
-    nombre: "Caño Termofusión 20mm x 4m Agua Fría/Caliente",
-    cat: "Plomería",
-    cats: ["Plomería"],
+    nombre: "CaÃ±o TermofusiÃ³n 20mm x 4m Agua FrÃ­a/Caliente",
+    cat: "PlomerÃ­a",
+    cats: ["PlomerÃ­a"],
     costo: 6800,
     venta: 11560,
     margen: 70,
@@ -344,16 +344,16 @@ export const initProductos = [
     minStock: 10,
     moneda: "ARS",
     provId: 4,
-    ubicacion: "Patio / Cañero",
-    imagen: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Tubo de polipropileno copolímero random para termofusión PN20."
+    ubicacion: "Patio / CaÃ±ero",
+    foto: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Tubo de polipropileno copolÃ­mero random para termofusiÃ³n PN20."
   },
   {
     id: 21,
     sku: "PLO-00002",
-    nombre: "Válvula Esférica de Paso Total 1/2 Pulgada Bronce",
-    cat: "Plomería",
-    cats: ["Plomería"],
+    nombre: "VÃ¡lvula EsfÃ©rica de Paso Total 1/2 Pulgada Bronce",
+    cat: "PlomerÃ­a",
+    cats: ["PlomerÃ­a"],
     costo: 8400,
     venta: 14280,
     margen: 70,
@@ -362,15 +362,15 @@ export const initProductos = [
     moneda: "ARS",
     provId: 4,
     ubicacion: "Pasillo 4 - Estante A",
-    imagen: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Llave de paso de bola cromada con manija mariposa metálica."
+    foto: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Llave de paso de bola cromada con manija mariposa metÃ¡lica."
   },
   {
     id: 22,
     sku: "PLO-00003",
-    nombre: "Cinta Selladora Teflón Alta Densidad 3/4 x 20m",
-    cat: "Plomería",
-    cats: ["Plomería"],
+    nombre: "Cinta Selladora TeflÃ³n Alta Densidad 3/4 x 20m",
+    cat: "PlomerÃ­a",
+    cats: ["PlomerÃ­a"],
     costo: 900,
     venta: 1800,
     margen: 100,
@@ -379,11 +379,11 @@ export const initProductos = [
     moneda: "ARS",
     provId: 4,
     ubicacion: "Caja Mostrador",
-    imagen: "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Cinta de teflón para roscas de agua y gas alta densidad."
+    foto: "https://images.unsplash.com/photo-1584715642381-6f1c4b452b1c?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Cinta de teflÃ³n para roscas de agua y gas alta densidad."
   },
 
-  // ── ADHESIVOS Y QUÍMICOS ──
+  // â”€â”€ ADHESIVOS Y QUÃMICOS â”€â”€
   {
     id: 23,
     sku: "ADH-00001",
@@ -398,8 +398,8 @@ export const initProductos = [
     moneda: "ARS",
     provId: 6,
     ubicacion: "Pasillo 2 - Estante C",
-    imagen: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Sellador de silicona neutro para vidrios, aluminio, baños y aberturas."
+    foto: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Sellador de silicona neutro para vidrios, aluminio, baÃ±os y aberturas."
   },
   {
     id: 24,
@@ -415,8 +415,8 @@ export const initProductos = [
     moneda: "ARS",
     provId: 6,
     ubicacion: "Pasillo 2 - Estante C",
-    imagen: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Espuma para fijación y aislamiento térmico y acústico de marcos y aberturas."
+    foto: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Espuma para fijaciÃ³n y aislamiento tÃ©rmico y acÃºstico de marcos y aberturas."
   },
   {
     id: 25,
@@ -432,7 +432,7 @@ export const initProductos = [
     moneda: "ARS",
     provId: 6,
     ubicacion: "Pasillo 2 - Estante C",
-    imagen: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
-    descripcion: "Adhesivo de agarre instantáneo sin necesidad de clavos ni tornillos."
+    foto: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=400&q=80",
+    descripcion: "Adhesivo de agarre instantÃ¡neo sin necesidad de clavos ni tornillos."
   }
 ]

@@ -143,18 +143,40 @@ export default function Dashboard({ productos, ventas, clientes, pedidos=[], pag
   const totalPeriod  = useMemo(()=>ventasPeriod==='dia'?totalHoy:ventasChart.reduce((a,b)=>a+b.v,0),[ventasChart,ventasPeriod,totalHoy])
 
   const catData = useMemo(()=>{
-    const ahora=getNow(), hoyStr=today()
-    const real=ventas.filter(v=>v.tipo!=='presupuesto'&&v.estado==='completada')
-    let fil=real
-    if(catPeriod==='dia')    fil=real.filter(v=>v.fecha===hoyStr)
-    else if(catPeriod==='semana') fil=real.filter(v=>(ahora-parseLocal(v.fecha))<7*86400000)
-    else if(catPeriod==='mes') fil=real.filter(v=>{ const d=parseLocal(v.fecha); return d.getMonth()===ahora.getMonth()&&d.getFullYear()===ahora.getFullYear() })
-    const cats = allCats && allCats.length>0 ? allCats : CATS_DEFAULT
-    return cats.map(cat=>({
-      cat:cat.slice(0,4),
-      v:fil.flatMap(v=>v.items).filter(i=>productos.find(x=>x.id===i.prodId)?.cat===cat).reduce((a,b)=>a+b.qty*b.precio,0)
-    })).filter(x=>x.v>0)
-  },[catPeriod,ventas,productos,allCats])
+    const ahora = getNow(), hoyStr = today()
+    const real  = ventas.filter(v => v.tipo !== 'presupuesto' && v.estado === 'completada')
+    
+    let fil = real
+    if (catPeriod === 'dia') {
+      fil = real.filter(v => v.fecha === hoyStr)
+    } else if (catPeriod === 'semana') {
+      const hace7 = new Date(ahora)
+      hace7.setDate(hace7.getDate() - 6)
+      hace7.setHours(0,0,0,0)
+      fil = real.filter(v => {
+        const d = parseLocal(v.fecha)
+        return d >= hace7 && d <= ahora
+      })
+    } else if (catPeriod === 'mes') {
+      fil = real.filter(v => {
+        const d = parseLocal(v.fecha)
+        return d.getMonth() === ahora.getMonth() && d.getFullYear() === ahora.getFullYear()
+      })
+    } else if (catPeriod === 'anio' || catPeriod === 'ano') {
+      fil = real.filter(v => {
+        const d = parseLocal(v.fecha)
+        return d.getFullYear() === ahora.getFullYear()
+      })
+    }
+
+    const cats = allCats && allCats.length > 0 ? allCats : CATS_DEFAULT
+    return cats.map(cat => ({
+      cat: cat.length > 8 ? cat.slice(0, 7) + '.' : cat,
+      fullCat: cat,
+      v: fil.flatMap(v => v.items).filter(i => productos.find(x => x.id === i.prodId)?.cat === cat)
+            .reduce((a, b) => a + (b.qty || 1) * (b.precio || 0) * (1 - (b.descuento || 0) / 100), 0)
+    })).filter(x => x.v > 0)
+  }, [catPeriod, ventas, productos, allCats])
 
   const tt = { contentStyle:{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,fontSize:12,color:C.text}, formatter:v=>[fmt(v)] }
 

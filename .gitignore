@@ -1,0 +1,41 @@
+﻿# Node dependencies
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Python scraper env & cache
+scraper/venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+scraper/__pycache__/
+
+# Database files
+src/data/db/*.db
+src/data/db/*.sqlite
+src/data/db/*.sqlite3
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE / Editors
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

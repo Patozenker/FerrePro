@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react'
-import { Upload, FileSpreadsheet, Camera, Globe, X, CheckCircle2, AlertTriangle, Plus, Trash2, Image as ImageIcon } from 'lucide-react'
+import React, { useState, useRef, useMemo } from 'react'
+import { Upload, FileSpreadsheet, Camera, Globe, X, CheckCircle2, AlertTriangle, Plus, Trash2, Image as ImageIcon, Download, Terminal, Play, Sparkles } from 'lucide-react'
 import { useTheme } from '../ThemeContext'
 import { nextId } from '../utils'
-import { clasificarEnFamilia, esCategoriaBasura } from '../data'
+import { FAMILIAS_PRINCIPALES, clasificarEnFamilia, esCategoriaBasura } from '../data'
 import * as XLSX from 'xlsx'
 
 const MAPEO_COLS = {
@@ -304,22 +304,26 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
         <button onClick={onClose} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer" }}><X size={18}/></button>
       </div>
 
-      {/* Categorías */}
-      <div style={{ ...s.card, padding:12, marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-          <span style={{ fontSize:12, color:C.subtle, fontWeight:600, whiteSpace:"nowrap" }}>Categorías disponibles:</span>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap", flex:1 }}>
-            {allCats.map(c => <span key={c} style={s.badge(C.blue)}>{c}</span>)}
+      {/* Familias y Categorías */}
+      <div style={{ ...s.card, padding: 12, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flex: 1 }}>
+            <span style={{ fontSize: 11, color: C.subtle, fontWeight: 700, textTransform: "uppercase" }}>Familias:</span>
+            {FAMILIAS_PRINCIPALES.filter(f => f.id !== 'otros').map(f => (
+              <span key={f.id} style={{ ...s.badge(C.blue), fontSize: 11, display: "flex", alignItems: "center", gap: 4, padding: "3px 8px" }}>
+                <span>{f.icono}</span> <span>{f.nombre}</span>
+              </span>
+            ))}
           </div>
-          <div style={{ display:"flex", gap:6 }}>
-            <input style={{ ...s.input, width:150, padding:"5px 10px", fontSize:12 }} placeholder="Nueva categoría..." value={newCat} onChange={e=>setNewCat(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addNewCat()}/>
-            <button style={{ ...s.btn("ghost"), padding:"5px 10px", fontSize:12 }} onClick={addNewCat}><Plus size={12}/> Agregar</button>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input style={{ ...s.input, width: 160, padding: "5px 10px", fontSize: 12 }} placeholder="Nueva categoría..." value={newCat} onChange={e=>setNewCat(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addNewCat()}/>
+            <button style={{ ...s.btn("ghost"), padding: "5px 10px", fontSize: 12 }} onClick={addNewCat}><Plus size={12}/> Agregar</button>
           </div>
         </div>
       </div>
 
       {/* Lista name + bulk cat + margen */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 200px 220px", gap:10, marginBottom:12 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 220px 220px", gap:10, marginBottom:12 }}>
         <div>
           <label style={s.label}>Nombre de la lista (para historial de precios)</label>
           <input style={s.input} placeholder="Lista Mar 2026..." value={listaName} onChange={e=>setListaName(e.target.value)}/>
@@ -329,7 +333,18 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
           <div style={{ display:"flex", gap:6 }}>
             <select style={s.input} value={bulkCat} onChange={e=>setBulkCat(e.target.value)}>
               <option value="">— mantener —</option>
-              {allCats.map(c=><option key={c}>{c}</option>)}
+              {FAMILIAS_PRINCIPALES.map(f => {
+                const subcats = allCats.filter(c => clasificarEnFamilia(c).id === f.id && !esCategoriaBasura(c))
+                if (!subcats.length) return <option key={f.id} value={f.nombre}>{f.icono} {f.nombre}</option>
+                return (
+                  <optgroup key={f.id} label={`${f.icono} ${f.nombre}`}>
+                    <option value={f.nombre}>[Familia] {f.nombre}</option>
+                    {subcats.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
             </select>
             <button style={{ ...s.btn("ghost"), padding:"8px 10px", flexShrink:0 }} onClick={()=>{ if(bulkCat) setPreview(p=>p.map(x=>({...x,cat:bulkCat}))) }}>✓</button>
           </div>
@@ -351,8 +366,8 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
       <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap", alignItems:"center" }}>
         {[
           { id:"excel", icon:FileSpreadsheet, label:"Excel / CSV" },
+          { id:"web",   icon:Globe,           label:"Desde web / Scraper" },
           { id:"foto",  icon:Camera,          label:"Foto / PDF"  },
-          { id:"web",   icon:Globe,           label:"Desde web"   },
           { id:"manual",icon:Plus,            label:"Manual"      },
         ].map(t => (
           <button key={t.id} onClick={()=>{ setTab(t.id); setPreview([]); setErrors([]) }}
@@ -405,6 +420,77 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
         </div>
       )}
 
+      {/* WEB / SCRAPER */}
+      {tab==="web" && (
+        <div style={{ marginBottom: 16 }}>
+          {/* Card Lanzador Scraper */}
+          <div style={{ background: `${C.accent}12`, border: `1px solid ${C.accent}40`, borderRadius: 12, padding: 18, marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.white, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🤖</span> <span>Scraper de Escritorio FerrePro (Extractor Universal)</span>
+                </div>
+                <p style={{ fontSize: 12, color: C.subtle, margin: '4px 0 0', lineHeight: 1.4 }}>
+                  Funciona 100% independiente en tu computadora para saltar protecciones y extraer sitios completos con Scroll Infinito, Mega-Menús y listas de precios.
+                </p>
+              </div>
+              <button
+                style={{ ...s.btn(), background: C.accent, padding: '8px 14px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={() => {
+                  const batContent = `@echo off\r\ntitle FerrePro Scraper Universal\r\ncd /d "%~dp0"\r\nif exist scraper\\ejecutar_scraper.bat (\r\n  call scraper\\ejecutar_scraper.bat\r\n) else (\r\n  python scraper\\gui.py\r\n)\r\npause\r\n`
+                  const blob = new Blob([batContent], { type: 'application/bat' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = 'abrir_scraper_ferrepro.bat'
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+              >
+                <Download size={13}/> Descargar Lanzador .BAT
+              </button>
+            </div>
+
+            {/* Pasos rápidos */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.accent}25` }}>
+              <div style={{ background: C.card, padding: '10px 12px', borderRadius: 8, border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.accent }}>1. Ejecutar Scraper</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Abrí <code>scraper/ejecutar_scraper.bat</code> en tu PC.</div>
+              </div>
+              <div style={{ background: C.card, padding: '10px 12px', borderRadius: 8, border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.accent }}>2. Seleccionar Rubros</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Marcá con check [✓] las secciones a extraer.</div>
+              </div>
+              <div style={{ background: C.card, padding: '10px 12px', borderRadius: 8, border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.accent }}>3. Arrastrar CSV</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Soltá el archivo generado en el recuadro de abajo.</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Zona para soltar el CSV obtenido */}
+          <div
+            onClick={() => fileRef.current.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
+            style={{ border: `2px dashed ${C.accent}60`, borderRadius: 12, padding: 24, textAlign: 'center', cursor: 'pointer', background: `${C.accent}08`, marginBottom: 14 }}
+          >
+            <FileSpreadsheet size={28} color={C.accent} style={{ marginBottom: 6 }}/>
+            <div style={{ fontSize: 13, color: C.white, fontWeight: 700 }}>¿Ya extrajiste el catálogo con el Scraper?</div>
+            <div style={{ fontSize: 11, color: C.subtle, marginTop: 3 }}>Hacé clic aquí o arrastrá el archivo <strong>.CSV / .XLSX</strong> generado para importarlo</div>
+          </div>
+
+          {/* Opción secundaria: URL Directa */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+            <label style={{ ...s.label, fontSize: 11 }}>Opcional: Extraer directamente desde URL web</label>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input style={{ ...s.input, flex: 1, fontSize: 12 }} placeholder="https://proveedor.com/categoria-productos" value={urlInput} onChange={e=>setUrlInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleURL()}/>
+              <button style={{ ...s.btn(), fontSize: 12, padding: "6px 14px" }} onClick={handleURL} disabled={loading}>{loading ? "..." : "Extraer"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FOTO */}
       {tab==="foto" && (
         <div onClick={()=>imgRef.current.click()} style={{ border:`2px dashed ${C.border}`, borderRadius:12, padding:36, textAlign:"center", cursor:"pointer", marginBottom:12 }}>
@@ -412,21 +498,6 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
           <div style={{ fontSize:14, color:C.subtle, fontWeight:600 }}>Subí foto de lista de precios o PDF</div>
           <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>Se generan filas editables — completá los datos</div>
           <input ref={imgRef} type="file" accept="image/*,.pdf" style={{ display:"none" }} onChange={e=>handleImg(e.target.files[0])}/>
-        </div>
-      )}
-
-      {/* WEB */}
-      {tab==="web" && (
-        <div style={{ marginBottom:12 }}>
-          <div style={{ padding:"8px 12px",background:`${C.blue}15`,border:`1px solid ${C.blue}30`,borderRadius:8,marginBottom:12,fontSize:12,color:C.blue }}>
-            💡 Podés usar el <strong>Scraper Independiente</strong> (en la carpeta <code>scraper/</code>) para extraer cualquier sitio con Scroll Infinito y arrastrar el CSV aquí.
-          </div>
-          <label style={s.label}>URL de la categoría/listado de productos del proveedor</label>
-          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-            <input style={{...s.input, flex:1}} placeholder="https://proveedor.com/categoria-productos" value={urlInput} onChange={e=>setUrlInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleURL()}/>
-            <button style={s.btn()} onClick={handleURL} disabled={loading}>{loading ? "..." : "Importar"}</button>
-          </div>
-          <div style={{ fontSize:12, color:C.muted, marginTop:6 }}>Recorre automáticamente la paginación del sitio hasta traer todo el catálogo de esa categoría.</div>
         </div>
       )}
 

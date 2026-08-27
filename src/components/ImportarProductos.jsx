@@ -14,6 +14,7 @@ const MAPEO_COLS = {
   minStock: ["min","minimo","stock_minimo","min_stock","stock minimo","alerta","punto pedido"],
   cat:      ["categoria","category","cat","rubro","tipo","type","familia","linea"],
   foto:     ["foto","imagen","image","img","picture","thumbnail","enlace_foto","url_foto","url_imagen"],
+  proveedor:["proveedor","supplier","vendor","distribuidor","marca_proveedor","origen","fuente"],
 }
 
 function detectarCol(headers, campo) {
@@ -31,7 +32,7 @@ function parseNum(v) {
   return parseFloat(s) || 0
 }
 
-export default function ImportarProductos({ onImport, onClose, proveedores, categoriasExtra, setCategoriasExtra }) {
+export default function ImportarProductos({ onImport, onClose, proveedores, setProveedores, categoriasExtra, setCategoriasExtra }) {
   const { C, s } = useTheme()
   const [tab, setTab]           = useState("excel")
   const [preview, setPreview]   = useState([])
@@ -42,6 +43,7 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
   const [headers, setHeaders]   = useState([])
   const [rawRows, setRawRows]   = useState([])
   const [provId, setProvId]     = useState(proveedores[0]?.id || 1)
+  const [detectedFileProv, setDetectedFileProv] = useState("")
   const [newCat, setNewCat]     = useState("")
   const [listaName, setListaName] = useState("")
   const [bulkCat, setBulkCat]     = useState("")
@@ -50,6 +52,46 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
   const imgRef  = useRef()
 
   const allCats = [...(categoriasExtra || [])]
+
+  // Resolver o auto-crear proveedor a partir del nombre en el archivo de scrap
+  const resolveProveedor = (provNameRaw) => {
+    if (!provNameRaw) return { id: +provId, nombre: proveedores.find(p => p.id === +provId)?.nombre || '' }
+    const n = String(provNameRaw).trim()
+    if (!n || n === '0' || n.toLowerCase() === 'n/a') return { id: +provId, nombre: proveedores.find(p => p.id === +provId)?.nombre || '' }
+
+    const nNorm = n.toLowerCase()
+    const exact = proveedores.find(p => p.nombre.trim().toLowerCase() === nNorm)
+    if (exact) return { id: exact.id, nombre: exact.nombre }
+
+    const partial = proveedores.find(p =>
+      p.nombre.toLowerCase().includes(nNorm) || nNorm.includes(p.nombre.toLowerCase())
+    )
+    if (partial) return { id: partial.id, nombre: partial.nombre }
+
+    // Si el proveedor no existe en FerrePro, crearlo automáticamente
+    const newId = (proveedores.length ? Math.max(...proveedores.map(p => p.id || 0)) : 0) + 1
+    const nuevoProv = {
+      id: newId,
+      nombre: n,
+      tel: '',
+      email: '',
+      cuit: '',
+      direccion: '',
+      rubro: 'General',
+      descuento: 0,
+      margen: 50,
+      condPago: 'Contado',
+      activo: true,
+      fechaAlta: new Date().toISOString().split('T')[0]
+    }
+    if (setProveedores) {
+      setProveedores(prev => {
+        if (prev.some(p => p.nombre.toLowerCase() === nNorm)) return prev
+        return [...prev, nuevoProv]
+      })
+    }
+    return { id: newId, nombre: n }
+  }
 
   const buildPreview = (rows, hdrs, mp, cats, margen = margenGanancia) => {
     const errs = []
@@ -74,6 +116,8 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
         cat = catMatch || catRaw || clasificarEnFamilia(nombre).nombre
       }
       const foto = String(get("foto") || '').trim()
+      const provRaw = String(get("proveedor")).trim()
+      const { id: rowProvId, nombre: rowProvNombre } = resolveProveedor(provRaw)
 
       return {
         _id: i,
@@ -86,7 +130,9 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
         minStock: parseInt(get("minStock")) || 3,
         foto,
         imagen:   foto,
-        provId:   +provId,
+        provId:   rowProvId,
+        proveedorNombre: rowProvNombre,
+        enlace:   String(get("enlace") || '').trim(),
         _ok: true,
       }
     }).filter(Boolean)
@@ -122,6 +168,20 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
       const mp = {}
       Object.keys(MAPEO_COLS).forEach(campo => { const c = detectarCol(hdrs, campo); if (c) mp[campo] = c })
       setMapeo(mp)
+
+      // Auto-detectar proveedor del archivo
+      const provCol = mp.proveedor || detectarCol(hdrs, 'proveedor')
+      if (provCol) {
+        const distinctProvs = Array.from(new Set(rows.map(r => String(r[provCol] || '').trim()).filter(Boolean)))
+        if (distinctProvs.length === 1) {
+          setDetectedFileProv(distinctProvs[0])
+          const resolved = resolveProveedor(distinctProvs[0])
+          setProvId(resolved.id)
+        } else if (distinctProvs.length > 1) {
+          setDetectedFileProv(`Múltiples (${distinctProvs.length})`)
+        }
+      }
+
       buildPreview(rows, hdrs, mp, allCats)
     } catch(e) {
       setErrors([`Error leyendo archivo: ${e.message}`])
@@ -149,6 +209,20 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
       const mp = {}
       Object.keys(MAPEO_COLS).forEach(campo => { const c = detectarCol(hdrs, campo); if (c) mp[campo] = c })
       setMapeo(mp)
+
+      // Auto-detectar proveedor del archivo
+      const provCol = mp.proveedor || detectarCol(hdrs, 'proveedor')
+      if (provCol) {
+        const distinctProvs = Array.from(new Set(rows.map(r => String(r[provCol] || '').trim()).filter(Boolean)))
+        if (distinctProvs.length === 1) {
+          setDetectedFileProv(distinctProvs[0])
+          const resolved = resolveProveedor(distinctProvs[0])
+          setProvId(resolved.id)
+        } else if (distinctProvs.length > 1) {
+          setDetectedFileProv(`Múltiples (${distinctProvs.length})`)
+        }
+      }
+
       buildPreview(rows, hdrs, mp, allCats)
     } catch(e) { setErrors([`Error leyendo CSV: ${e.message}`]) }
     setLoading(false)
@@ -375,9 +449,18 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
             <t.icon size={13}/> {t.label}
           </button>
         ))}
-        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:12, color:C.muted, whiteSpace:"nowrap" }}>Proveedor por defecto</span>
-          <select style={{ ...s.input, width:180 }} value={provId} onChange={e=>setProvId(+e.target.value)}>
+        <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+          {detectedFileProv && (
+            <span style={{ ...s.badge(C.green), fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: "4px 8px" }}>
+              ✓ Proveedor del archivo: <strong>{detectedFileProv}</strong>
+            </span>
+          )}
+          <span style={{ fontSize:12, color:C.muted, whiteSpace:"nowrap" }}>Proveedor asignado:</span>
+          <select style={{ ...s.input, width:180 }} value={provId} onChange={e=>{
+            const nid = +e.target.value
+            setProvId(nid)
+            setPreview(prev => prev.map(p => ({ ...p, provId: nid })))
+          }}>
             {proveedores.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
           </select>
         </div>
@@ -538,9 +621,9 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
             </div>
           </div>
           <div style={{ overflowX:"auto",maxHeight:380,overflowY:"auto",border:`1px solid ${C.border}`,borderRadius:8 }}>
-            <table style={{ ...s.table,minWidth:860 }}>
+            <table style={{ ...s.table,minWidth:960 }}>
               <thead style={{ position:"sticky",top:0,background:C.card,zIndex:1 }}>
-                <tr>{["Foto","SKU","Nombre *","Categoría","Costo","P. Venta","Stock","Mín",""].map(h=><th key={h} style={s.th}>{h}</th>)}</tr>
+                <tr>{["Foto","SKU","Nombre *","Categoría","Proveedor","Costo","P. Venta","Stock","Mín",""].map(h=><th key={h} style={s.th}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {preview.map(p=>(
@@ -553,10 +636,19 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
                       )}
                     </td>
                     <td style={s.td}><input style={{ ...inputStyle,width:85 }} value={p.sku} onChange={e=>updateField(p._id,"sku",e.target.value)}/></td>
-                    <td style={s.td}><input style={{ ...inputStyle,width:200 }} value={p.nombre} onChange={e=>updateField(p._id,"nombre",e.target.value)} placeholder="Nombre del producto *"/></td>
+                    <td style={s.td}><input style={{ ...inputStyle,width:190 }} value={p.nombre} onChange={e=>updateField(p._id,"nombre",e.target.value)} placeholder="Nombre del producto *"/></td>
                     <td style={s.td}>
-                      <select style={{ ...inputStyle,width:120 }} value={p.cat} onChange={e=>updateField(p._id,"cat",e.target.value)}>
+                      <select style={{ ...inputStyle,width:115 }} value={p.cat} onChange={e=>updateField(p._id,"cat",e.target.value)}>
                         {allCats.map(c=><option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </td>
+                    <td style={s.td}>
+                      <select
+                        style={{ ...inputStyle,width:130 }}
+                        value={p.provId || provId}
+                        onChange={e=>updateField(p._id,"provId",+e.target.value)}
+                      >
+                        {proveedores.map(pr=><option key={pr.id} value={pr.id}>{pr.nombre}</option>)}
                       </select>
                     </td>
                     <td style={s.td}><input style={{ ...inputStyle,width:75 }} type="number" value={p.costo} onChange={e=>{

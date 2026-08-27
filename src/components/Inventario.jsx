@@ -33,7 +33,7 @@ function Lightbox({ src, nombre, onClose }) {
   )
 }
 
-export default function Inventario({ productos, setProductos, proveedores, categoriasExtra,
+export default function Inventario({ productos, setProductos, proveedores, setProveedores, categoriasExtra,
   setCategoriasExtra, editProdId, setEditProdId, historialPrecios, setHistorialPrecios, allCats: allCatsFromApp, cotizacionUSD=1200 }) {
   const { C, s } = useTheme()
   const allCats = allCatsFromApp || [...CATS_DEFAULT, ...(categoriasExtra||[])]
@@ -905,7 +905,7 @@ export default function Inventario({ productos, setProductos, proveedores, categ
         <div style={s.modal} onClick={()=>setShowImport(false)}>
           <div onClick={e=>e.stopPropagation()}>
             <ImportarProductos onImport={handleImport} onClose={()=>setShowImport(false)}
-              proveedores={proveedores} categoriasExtra={allCats} setCategoriasExtra={setCategoriasExtra}/>
+              proveedores={proveedores} setProveedores={setProveedores} categoriasExtra={allCats} setCategoriasExtra={setCategoriasExtra}/>
           </div>
         </div>
       )}

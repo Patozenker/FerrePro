@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react'
 import { Upload, FileSpreadsheet, Camera, Globe, X, CheckCircle2, AlertTriangle, Plus, Trash2, Image as ImageIcon } from 'lucide-react'
 import { useTheme } from '../ThemeContext'
 import { nextId } from '../utils'
+import { clasificarEnFamilia, esCategoriaBasura } from '../data'
 import * as XLSX from 'xlsx'
 
 const MAPEO_COLS = {
@@ -64,10 +65,14 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
       const ventaRaw = parseNum(get("venta"))
       const venta  = ventaRaw > 0 ? ventaRaw : costo > 0 ? Math.round(costo * (1 + (margen || 50) / 100)) : 0
       const catRaw = String(get("cat")).trim()
-      // Buscar coincidencia exacta o similar con categorías ya existentes
-      const catMatch = cats.find(c => c.trim().toLowerCase() === catRaw.toLowerCase() || (catRaw.length >= 4 && c.toLowerCase().includes(catRaw.toLowerCase().slice(0, 4))))
-      // Si coincide con una ya creada por otro proveedor, usar esa; si no, conservar la nueva para auto-crearla
-      const cat = catMatch || (catRaw && catRaw !== '0' ? catRaw : (cats[0] || 'General'))
+      let cat = ''
+      if (esCategoriaBasura(catRaw)) {
+        // Deducir automáticamente familia a partir del nombre del producto
+        cat = clasificarEnFamilia(nombre).nombre
+      } else {
+        const catMatch = cats.find(c => c.trim().toLowerCase() === catRaw.toLowerCase() || (catRaw.length >= 4 && c.toLowerCase().includes(catRaw.toLowerCase().slice(0, 4))))
+        cat = catMatch || catRaw || clasificarEnFamilia(nombre).nombre
+      }
       const foto = String(get("foto") || '').trim()
 
       return {
@@ -267,12 +272,12 @@ export default function ImportarProductos({ onImport, onClose, proveedores, cate
     const validos = preview.filter(p => p.nombre.trim())
     if (!validos.length) return
 
-    // Auto-registrar categorías nuevas que no existan en FerrePro
+    // Auto-registrar categorías nuevas válidas (descartando basura)
     if (setCategoriasExtra) {
       const nuevasCats = []
       validos.forEach(p => {
         const catNombre = String(p.cat || '').trim()
-        if (catNombre && !allCats.some(c => c.toLowerCase() === catNombre.toLowerCase())) {
+        if (catNombre && !esCategoriaBasura(catNombre) && !allCats.some(c => c.toLowerCase() === catNombre.toLowerCase())) {
           if (!nuevasCats.some(c => c.toLowerCase() === catNombre.toLowerCase())) {
             nuevasCats.push(catNombre)
           }

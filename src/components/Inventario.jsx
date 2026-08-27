@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react'
 import { Search, Plus, Pencil, Trash2, CheckCircle2, Upload, ChevronUp, ChevronDown,
          Image as ImageIcon, X, CheckSquare, Square, ZoomIn } from 'lucide-react'
 import { useTheme } from '../ThemeContext'
-import { CATS_DEFAULT } from '../data'
+import { CATS_DEFAULT, FAMILIAS_PRINCIPALES, clasificarEnFamilia, esCategoriaBasura } from '../data'
 import { nextId, fmt, today } from '../utils'
 import { Modal, FF, StockBadge, TR } from './Shared'
 import ImportarProductos from './ImportarProductos'
@@ -75,16 +75,66 @@ export default function Inventario({ productos, setProductos, proveedores, categ
   const bulkImgRef  = useRef()
 
   // ── Estado ────────────────────────────────────────────────────────────────
-  const [search, setSearch]         = useState("")
-  const [catFilter, setCatFilter]   = useState("Todos")
-  const [modal, setModal]           = useState(null)
-  const [form, setForm]             = useState({})
-  const [showImport, setShowImport] = useState(false)
-  const [sortCol, setSortCol]       = useState("nombre")
-  const [sortDir, setSortDir]       = useState("asc")
-  const [ganancia, setGanancia]     = useState("")
-  const [quickEdit, setQuickEdit]   = useState(null)
-  const [viewMode, setViewMode]     = useState("table") // "table" | "grid"
+  const [search, setSearch]                 = useState("")
+  const [familiaFilter, setFamiliaFilter]   = useState("Todas")
+  const [catFilter, setCatFilter]           = useState("Todos")
+  const [showModalFamilias, setShowModalFamilias] = useState(false)
+  const [modal, setModal]                   = useState(null)
+  const [form, setForm]                     = useState({})
+  const [showImport, setShowImport]         = useState(false)
+  const [sortCol, setSortCol]               = useState("nombre")
+  const [sortDir, setSortDir]               = useState("asc")
+  const [ganancia, setGanancia]             = useState("")
+  const [quickEdit, setQuickEdit]           = useState(null)
+  const [viewMode, setViewMode]             = useState("table") // "table" | "grid"
+
+  // ── Conteo y Agrupación por Familias ──────────────────────────────────────
+  const conteoFamilias = useMemo(() => {
+    const counts = { Todas: productos.length }
+    FAMILIAS_PRINCIPALES.forEach(f => { counts[f.id] = 0 })
+    productos.forEach(p => {
+      const fam = clasificarEnFamilia(p.cat)
+      counts[fam.id] = (counts[fam.id] || 0) + 1
+    })
+    return counts
+  }, [productos])
+
+  const familiasActivas = useMemo(() => {
+    return FAMILIAS_PRINCIPALES.filter(f => (conteoFamilias[f.id] || 0) > 0 || ['pinturas','herramientas','seguridad','electricidad','plomeria','construccion'].includes(f.id))
+  }, [conteoFamilias])
+
+  const subcatsDeFamilia = useMemo(() => {
+    if (familiaFilter === 'Todas') {
+      const setCats = new Set(productos.map(p => p.cat).filter(c => c && !esCategoriaBasura(c)))
+      return Array.from(setCats).sort()
+    }
+    const setCats = new Set(
+      productos
+        .filter(p => clasificarEnFamilia(p.cat).id === familiaFilter)
+        .map(p => p.cat)
+        .filter(c => c && !esCategoriaBasura(c))
+    )
+    return Array.from(setCats).sort()
+  }, [productos, familiaFilter])
+
+  // Normalizador y Limpiador de Categorías Basura
+  const normalizarYLimpiarCatalogo = () => {
+    let cambiados = 0
+    setProductos(prev => prev.map(p => {
+      const esBasura = esCategoriaBasura(p.cat)
+      if (esBasura) {
+        cambiados++
+        const fam = clasificarEnFamilia(p.nombre)
+        return { ...p, cat: fam.nombre }
+      }
+      return p
+    }))
+    setCategoriasExtra(prev => (prev || []).filter(c => !esCategoriaBasura(c)))
+    setCatFilter("Todos")
+    setFamiliaFilter("Todas")
+    setShowModalFamilias(false)
+    alert("🧹 ¡Catálogo normalizado con éxito!\n\nSe organizaron los rubros en sus Familias correspondientes y se eliminaron las categorías rotas o basura.")
+  }
 
   // Auto-generate SKU: first 3 letters of category + sequential 5-digit number
   const generateSKU = (cat) => {
@@ -142,8 +192,24 @@ export default function Inventario({ productos, setProductos, proveedores, categ
     : sortDir==="asc" ? <ChevronUp size={11} color={C.accent}/> : <ChevronDown size={11} color={C.accent}/>
 
   const filtered = useMemo(()=>{
-    let res=productos.filter(p=>(catFilter==="Todos"||p.cat===catFilter)
-      &&(p.nombre.toLowerCase().includes(search.toLowerCase())||(p.sku||"").toLowerCase().includes(search.toLowerCase())))
+    let res = productos.filter(p => {
+      // Filtro por Familia
+      if (familiaFilter !== "Todas") {
+        const fam = clasificarEnFamilia(p.cat)
+        if (fam.id !== familiaFilter) return false
+      }
+      // Filtro por Subcategoría específica
+      if (catFilter !== "Todos" && catFilter !== "Todas") {
+        if (p.cat !== catFilter) return false
+      }
+      // Filtro por búsqueda
+      const sTerm = search.toLowerCase()
+      if (sTerm && !p.nombre.toLowerCase().includes(sTerm) && !(p.sku || "").toLowerCase().includes(sTerm) && !(p.cat || "").toLowerCase().includes(sTerm)) {
+        return false
+      }
+      return true
+    })
+
     const dir=sortDir==="asc"?1:-1
     res.sort((a,b)=>{
       const av=sortCol==="margen"?(a.costo>0?(a.venta-a.costo)/a.costo:0):(a[sortCol]||"")
@@ -151,7 +217,7 @@ export default function Inventario({ productos, setProductos, proveedores, categ
       return typeof av==="string"?av.localeCompare(bv)*dir:(av-bv)*dir
     })
     return res
-  },[productos,search,catFilter,sortCol,sortDir])
+  },[productos, search, familiaFilter, catFilter, sortCol, sortDir])
 
   // ── Guardar producto ──────────────────────────────────────────────────────
   const save = () => {
@@ -384,34 +450,129 @@ export default function Inventario({ productos, setProductos, proveedores, categ
         </div>
       )}
 
-      {/* Filtros */}
-      <div style={{ display:"flex",gap:10,marginBottom:12,flexWrap:"wrap" }}>
-        <div style={{ position:"relative",flex:1,maxWidth:300 }}>
-          <Search size={13} style={{ position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",color:C.muted }}/>
-          <input style={{ ...s.input,paddingLeft:28 }} placeholder="Nombre o SKU..." value={search} onChange={e=>setSearch(e.target.value)}/>
-        </div>
-        <div style={{ display:"flex",gap:5,flexWrap:"wrap",alignItems:"center" }}>
-          {["Todos",...allCats].map(c=>(
-            <div key={c} style={{ display:'flex',alignItems:'center',gap:0 }}>
-              <button onClick={()=>setCatFilter(c)} style={{ ...s.pill(catFilter===c),fontSize:11,borderRadius:c==='Todos'?undefined:'6px 0 0 6px' }}>{c}</button>
-              {c!=='Todos' && (
+      {/* ── BARRA DE FAMILIAS Y SUBCATEGORÍAS ── */}
+      <div style={{ ...s.card, padding: "12px 16px", marginBottom: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Fila 1: Buscador + Familias Principales */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 220, maxWidth: 320 }}>
+            <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.muted }}/>
+            <input style={{ ...s.input, paddingLeft: 30, fontSize: 12, padding: "6px 10px 6px 30px" }} placeholder="Buscar por Nombre, SKU o Rubro..." value={search} onChange={e=>setSearch(e.target.value)}/>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flex: 2 }}>
+            <button
+              onClick={() => { setFamiliaFilter("Todas"); setCatFilter("Todos") }}
+              style={{
+                ...s.pill(familiaFilter === "Todas"),
+                fontSize: 12,
+                fontWeight: familiaFilter === "Todas" ? 700 : 500,
+                padding: "6px 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                borderRadius: 8
+              }}
+            >
+              🏢 Todas <span style={{ opacity: 0.7, fontSize: 10 }}>({conteoFamilias.Todas})</span>
+            </button>
+            {familiasActivas.map(fam => {
+              const count = conteoFamilias[fam.id] || 0
+              const isSel = familiaFilter === fam.id
+              return (
                 <button
-                  title={`Eliminar categoría "${c}"`}
-                  onClick={e=>{
-                    e.stopPropagation()
-                    if(!confirm(`¿Eliminar la categoría "${c}"? Los productos con esta categoría quedarán sin categoría asignada.`)) return
-                    setCategoriasExtra(prev=>prev.filter(x=>x!==c))
-                    if(catFilter===c) setCatFilter('Todos')
+                  key={fam.id}
+                  onClick={() => { setFamiliaFilter(fam.id); setCatFilter("Todos") }}
+                  style={{
+                    ...s.pill(isSel),
+                    fontSize: 12,
+                    fontWeight: isSel ? 700 : 500,
+                    padding: "6px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    borderRadius: 8
                   }}
-                  style={{ background:'transparent',border:`1px solid ${C.border}`,borderLeft:'none',borderRadius:'0 6px 6px 0',padding:'3px 5px',cursor:'pointer',color:C.muted,display:'flex',alignItems:'center' }}
-                  onMouseEnter={e=>{e.currentTarget.style.color=C.red;e.currentTarget.style.borderColor=C.red}}
-                  onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.borderColor=C.border}}>
-                  <X size={9}/>
+                >
+                  <span>{fam.icono}</span>
+                  <span>{fam.nombre}</span>
+                  <span style={{ opacity: 0.7, fontSize: 10 }}>({count})</span>
                 </button>
-              )}
-            </div>
-          ))}
+              )
+            })}
+          </div>
+
+          {/* Botón de Gestión y Limpieza de Familias */}
+          <button
+            onClick={() => setShowModalFamilias(true)}
+            style={{
+              ...s.btn("ghost"),
+              fontSize: 11,
+              padding: "5px 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              color: C.accent,
+              borderColor: `${C.accent}40`
+            }}
+            title="Organizar rubros en familias y limpiar categorías rotas o basura"
+          >
+            ⚙️ Organizar Familias
+          </button>
         </div>
+
+        {/* Fila 2: Subcategorías específicas de la familia seleccionada */}
+        {subcatsDeFamilia.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", paddingTop: 6, borderTop: `1px solid ${C.border}30` }}>
+            <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>
+              {familiaFilter === "Todas" ? "Sub-rubros:" : "Rubros específicos:"}
+            </span>
+            <button
+              onClick={() => setCatFilter("Todos")}
+              style={{
+                ...s.pill(catFilter === "Todos"),
+                fontSize: 11,
+                padding: "3px 10px",
+                borderRadius: 12
+              }}
+            >
+              Todos ({filtered.length})
+            </button>
+            {subcatsDeFamilia.slice(0, 12).map(sc => {
+              const isSel = catFilter === sc
+              const count = productos.filter(p => p.cat === sc).length
+              return (
+                <button
+                  key={sc}
+                  onClick={() => setCatFilter(isSel ? "Todos" : sc)}
+                  style={{
+                    ...s.pill(isSel),
+                    fontSize: 11,
+                    padding: "3px 10px",
+                    borderRadius: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4
+                  }}
+                >
+                  <span>{sc}</span>
+                  <span style={{ opacity: 0.6, fontSize: 9 }}>({count})</span>
+                </button>
+              )
+            })}
+            {subcatsDeFamilia.length > 12 && (
+              <select
+                style={{ ...s.input, fontSize: 11, padding: "3px 8px", width: "auto", borderRadius: 12 }}
+                value={subcatsDeFamilia.includes(catFilter) ? catFilter : ""}
+                onChange={e => setCatFilter(e.target.value || "Todos")}
+              >
+                <option value="">Más rubros ({subcatsDeFamilia.length - 12})...</option>
+                {subcatsDeFamilia.slice(12).map(sc => (
+                  <option key={sc} value={sc}>{sc} ({productos.filter(p => p.cat === sc).length})</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Vista Grid / Cards */}
@@ -472,6 +633,7 @@ export default function Inventario({ productos, setProductos, proveedores, categ
             <th style={s.th}></th>
             <SortTH col="sku" label="SKU"/>
             <SortTH col="nombre" label="Producto"/>
+            <SortTH col="cat" label="Familia / Rubro"/>
             <SortTH col="costo" label="Costo"/>
             <SortTH col="margen" label="Margen"/>
             <SortTH col="venta" label="Venta"/>
@@ -486,6 +648,7 @@ export default function Inventario({ productos, setProductos, proveedores, categ
               const ventaCalc = (p.margen && costoARS) ? Math.round(costoARS*(1+p.margen/100)) : p.venta
               const m=costoARS>0?(((p.venta-costoARS)/costoARS)*100).toFixed(0):0
               const isSel = selected.has(p.id)
+              const fam = clasificarEnFamilia(p.cat)
               return <TR key={p.id} style={{ background: isSel ? `${C.accent}10` : undefined }}>
                 {/* Checkbox */}
                 <td style={{ ...s.td,width:36,textAlign:"center",cursor:"pointer" }} onClick={()=>toggleSelect(p.id)}>
@@ -518,6 +681,17 @@ export default function Inventario({ productos, setProductos, proveedores, categ
                 </td>
                 <td style={{ ...s.td,fontFamily:"monospace",fontSize:11,color:C.muted }}>{p.sku||"—"}</td>
                 <td style={{ ...s.td,fontWeight:500,color:C.white }}>{p.nombre}</td>
+                {/* Familia / Rubro */}
+                <td style={{ ...s.td, padding:'6px 10px' }}>
+                  <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                    <span style={{ fontSize:10, color:C.muted, fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
+                      <span>{fam.icono}</span> <span>{fam.nombre}</span>
+                    </span>
+                    <span style={{ ...s.badge(C.blue), fontSize:11, width:'fit-content', maxWidth:150, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={p.cat}>
+                      {p.cat || fam.nombre}
+                    </span>
+                  </div>
+                </td>
                 <td style={{ ...s.td,fontFamily:"monospace" }}>
                   {p.moneda==='USD'
                     ? <div>
@@ -732,6 +906,66 @@ export default function Inventario({ productos, setProductos, proveedores, categ
           <div onClick={e=>e.stopPropagation()}>
             <ImportarProductos onImport={handleImport} onClose={()=>setShowImport(false)}
               proveedores={proveedores} categoriasExtra={allCats} setCategoriasExtra={setCategoriasExtra}/>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Organizar Familias y Limpiar Rubros */}
+      {showModalFamilias && (
+        <div style={s.modal} onClick={()=>setShowModalFamilias(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:24, width:680, maxWidth:"95vw", maxHeight:"90vh", overflow:"auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div>
+                <h3 style={{ margin:0, fontSize:16, fontWeight:800, color:C.white }}>⚙️ Gestión y Limpieza de Familias y Rubros</h3>
+                <p style={{ margin:"3px 0 0", fontSize:12, color:C.muted }}>Agrupá tus productos en grandes familias y eliminá categorías rotas o basura en 1 clic</p>
+              </div>
+              <button onClick={()=>setShowModalFamilias(false)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer" }}><X size={18}/></button>
+            </div>
+
+            {/* Tarjeta de Acción Rápida */}
+            <div style={{ background:`${C.blue}15`, border:`1px solid ${C.blue}40`, borderRadius:10, padding:14, marginBottom:16 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.blue, display:"flex", alignItems:"center", gap:6 }}>
+                    🧹 Normalizar y Limpiar Catálogo
+                  </div>
+                  <div style={{ fontSize:11, color:C.subtle, marginTop:3, lineHeight:1.4 }}>
+                    Re-clasifica automáticamente productos con nombres rotos (ej: <i>.html, 4 Lts, 25% OFF</i>) en sus Familias correspondientes y remueve las categorías basura de la lista superior.
+                  </div>
+                </div>
+                <button
+                  style={{ ...s.btn(), background:C.blue, padding:"8px 16px", fontSize:12, fontWeight:700, whiteSpace:"nowrap" }}
+                  onClick={normalizarYLimpiarCatalogo}
+                >
+                  ⚡ Ejecutar Limpieza en 1 Clic
+                </button>
+              </div>
+            </div>
+
+            {/* Resumen de Familias y Distribución */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.white, marginBottom:8 }}>Distribución actual del inventario por Familias:</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:8 }}>
+                {FAMILIAS_PRINCIPALES.map(fam => {
+                  const count = conteoFamilias[fam.id] || 0
+                  return (
+                    <div key={fam.id} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                        <span style={{ fontSize:16 }}>{fam.icono}</span>
+                        <span style={{ fontSize:12, fontWeight:600, color:C.white }}>{fam.nombre}</span>
+                      </div>
+                      <span style={{ ...s.badge(count>0?C.accent:C.muted), fontSize:11, fontWeight:700 }}>
+                        {count} {count === 1 ? 'prod.' : 'prods.'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:16 }}>
+              <button style={s.btn("ghost")} onClick={()=>setShowModalFamilias(false)}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}
